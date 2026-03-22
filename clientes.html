@@ -1,0 +1,30 @@
+<section class="section">
+  <div class="section__header">
+    <div>
+      <h2>Clientes</h2>
+      <p>Consulte os clientes cadastrados e abra um novo cadastro.</p>
+    </div>
+    <button class="btn btn--primary" id="btnNovoClientePainel">Novo cliente</button>
+  </div>
+
+  <section class="controls">
+    <div class="control control--grow">
+      <label for="clientesBusca">Busca</label>
+      <input id="clientesBusca" type="search" placeholder="Nome, CPF/CNPJ, e-mail ou cidade" />
+    </div>
+    <div class="control">
+      <label for="clientesTipo">Tipo</label>
+      <select id="clientesTipo">
+        <option value="">Todos</option>
+        <option value="PF">PF</option>
+        <option value="PJ">PJ</option>
+      </select>
+    </div>
+  </section>
+
+  <div id="clientesLista" class="cards"></div>
+  <div id="clientesVazio" class="empty">
+    <h2>Nenhum cliente encontrado</h2>
+    <p>Faça o primeiro cadastro para começar.</p>
+  </div>
+</section>

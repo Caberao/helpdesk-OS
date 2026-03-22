@@ -1,0 +1,214 @@
+<section class="section">
+  <div id="vendasListaSection">
+    <div class="section__header">
+      <div>
+        <h2>Vendas</h2>
+        <p>Acompanhe vendas por cliente, origem e status de recebimento.</p>
+      </div>
+      <button type="button" class="btn btn--primary" id="vendasNovo">Nova venda</button>
+    </div>
+
+    <section class="controls">
+      <div class="control control--grow">
+        <label for="vendasBusca">Busca</label>
+        <input id="vendasBusca" type="search" placeholder="Nº, cliente, origem" />
+      </div>
+      <div class="control">
+        <label for="vendasFiltroData">Data</label>
+        <input id="vendasFiltroData" type="date" />
+      </div>
+      <div class="control">
+        <label for="vendasFiltroOrigem">Origem</label>
+        <select id="vendasFiltroOrigem">
+          <option value="">Todas</option>
+          <option value="Direta">Direta</option>
+          <option value="OS">O.S.</option>
+          <option value="Orcamento">Orçamento</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="vendasFiltroStatus">Status</label>
+        <select id="vendasFiltroStatus">
+          <option value="">Todos</option>
+          <option value="Pendente">Pendente</option>
+          <option value="Parcial">Parcial</option>
+          <option value="Recebido">Recebido</option>
+        </select>
+      </div>
+    </section>
+
+    <div id="vendasLista" class="cards"></div>
+    <div id="vendasVazio" class="empty">
+      <h2>Nenhuma venda encontrada</h2>
+      <p>Crie uma venda para iniciar o controle comercial.</p>
+    </div>
+  </div>
+
+  <div id="vendasEditorSection" style="display: none">
+    <div class="section__header">
+      <div>
+        <h2>Editor de venda</h2>
+        <p>Preencha os dados da venda e finalize o recebimento.</p>
+      </div>
+    </div>
+
+    <section class="table-block">
+      <div class="table-block__header">
+        <h3>Dados da venda</h3>
+      </div>
+      <section class="controls controls--orcamento" style="margin-top: 0">
+        <div class="control">
+          <label for="vendaNumero">Nº venda</label>
+          <input id="vendaNumero" type="text" readonly />
+        </div>
+        <div class="control">
+          <label for="vendaData">Data da venda</label>
+          <input id="vendaData" type="date" />
+        </div>
+        <div class="control">
+          <label for="vendaOrigemTipo">Origem</label>
+          <select id="vendaOrigemTipo">
+            <option value="Direta">Direta</option>
+            <option value="OS">O.S.</option>
+            <option value="Orcamento">Orçamento</option>
+          </select>
+        </div>
+        <div class="control control--grow">
+          <label for="vendaOrigemId">Referência da origem</label>
+          <input id="vendaOrigemId" type="text" placeholder="Ex.: 45656" />
+        </div>
+      </section>
+    </section>
+
+    <section class="table-block">
+      <div class="table-block__header">
+        <h3>Cliente e descrição</h3>
+      </div>
+      <section class="controls controls--orcamento" style="margin-top: 0; grid-template-columns: 1fr 3fr">
+        <div class="control">
+          <label for="vendaClienteModo">Cliente</label>
+          <select id="vendaClienteModo">
+            <option value="cadastrado">Cliente cadastrado</option>
+            <option value="manual">Nome manual</option>
+          </select>
+        </div>
+        <div class="control control--grow">
+          <label for="vendaClienteId">Selecionar cliente</label>
+          <select id="vendaClienteId"></select>
+          <input
+            id="vendaClienteNome"
+            type="text"
+            placeholder="Nome para venda direta"
+            style="display: none; margin-top: 8px"
+          />
+        </div>
+      </section>
+      <section class="controls controls--orcamento" style="margin-top: 10px">
+        <div class="control control--grow" style="grid-column: 1 / -1">
+          <label for="vendaDescricao">Descrição</label>
+          <textarea id="vendaDescricao" rows="2" placeholder="Resumo da venda"></textarea>
+        </div>
+      </section>
+    </section>
+
+    <section class="table-block">
+      <div class="table-block__header">
+        <h3>Peças da venda</h3>
+        <button type="button" class="btn btn--ghost" id="vendaAddItem">Adicionar peça</button>
+      </div>
+      <div class="table-scroll">
+        <table class="orcamento-table" id="vendaTabelaItens">
+          <thead>
+            <tr>
+              <th>Nº</th>
+              <th>Descrição</th>
+              <th>Un</th>
+              <th>Qtde</th>
+              <th>Preço un</th>
+              <th>Total</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="table-block">
+      <div class="table-block__header">
+        <h3>Serviços da venda</h3>
+        <button type="button" class="btn btn--ghost" id="vendaAddServico">Adicionar serviço</button>
+      </div>
+      <div class="table-scroll">
+        <table class="orcamento-table" id="vendaTabelaServicos">
+          <thead>
+            <tr>
+              <th>Nº</th>
+              <th>Descrição</th>
+              <th>Un</th>
+              <th>Qtde</th>
+              <th>Preço un</th>
+              <th>Total</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="table-block">
+      <div class="table-block__header">
+        <h3>Recebimento</h3>
+      </div>
+      <section class="controls controls--orcamento" style="margin-top: 0; grid-template-columns: 0.8fr 1fr 1fr 1fr 1fr">
+        <div class="control">
+          <label for="vendaValorTotal">Valor total</label>
+          <input id="vendaValorTotal" type="text" placeholder="R$ 0,00" readonly />
+        </div>
+        <div class="control">
+          <label for="vendaDescontoValor">Desconto</label>
+          <input id="vendaDescontoValor" type="text" placeholder="R$ 0,00 ou 10%" />
+        </div>
+        <div class="control">
+          <label for="vendaOutrosValores">Outros valores</label>
+          <input id="vendaOutrosValores" type="text" placeholder="R$ 0,00" />
+        </div>
+        <div class="control">
+          <label for="vendaValorFinal">Valor final</label>
+          <input id="vendaValorFinal" type="text" placeholder="R$ 0,00" readonly />
+        </div>
+        <div class="control">
+          <label for="vendaValorRecebido">Valor recebido</label>
+          <input id="vendaValorRecebido" type="text" placeholder="R$ 0,00" />
+        </div>
+      </section>
+      <section class="controls controls--orcamento" style="margin-top: 10px; grid-template-columns: 1fr 1fr">
+        <div class="control">
+          <label for="vendaMetodoPagamento">Método</label>
+          <select id="vendaMetodoPagamento">
+            <option value="Nao informado">Não informado</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Pix">Pix</option>
+            <option value="Cartao">Cartão</option>
+            <option value="Boleto">Boleto</option>
+            <option value="Crediario">Crediário</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="vendaStatusRecebimento">Status recebimento</label>
+          <select id="vendaStatusRecebimento">
+            <option value="Pendente">Pendente</option>
+            <option value="Parcial">Parcial</option>
+            <option value="Recebido">Recebido</option>
+          </select>
+        </div>
+      </section>
+    </section>
+
+    <footer class="form-actions">
+      <button type="button" class="btn btn--ghost" id="vendasVoltar">Voltar</button>
+      <button type="button" class="btn btn--primary" id="vendasSalvar">Salvar venda</button>
+    </footer>
+  </div>
+</section>

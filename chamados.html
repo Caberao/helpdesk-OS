@@ -1,0 +1,52 @@
+<section class="section">
+  <div class="section__header">
+    <div>
+      <h2>O.S.</h2>
+      <p>Gerencie ordens de serviço e acompanhe o status.</p>
+    </div>
+    <button class="btn btn--primary" id="btnNovo">Nova O.S.</button>
+  </div>
+
+  <section class="controls">
+    <div class="control control--grow">
+      <label for="busca">Busca</label>
+      <input id="busca" type="search" placeholder="Nome, CPF/CNPJ ou número da O.S." />
+    </div>
+    <div class="control">
+      <label for="filtroData">Data de entrada</label>
+      <div class="control__field">
+        <input id="filtroData" type="date" />
+        <button type="button" class="clear-btn" data-clear="filtroData" aria-label="Limpar data">×</button>
+      </div>
+    </div>
+    <div class="control">
+      <label for="filtroStatus">Status</label>
+      <select id="filtroStatus">
+        <option value="">Todos</option>
+        <option value="Aberto">Aberto</option>
+        <option value="Em atendimento">Em atendimento</option>
+        <option value="Resolvido">Resolvido</option>
+        <option value="Concluida">Concluída</option>
+        <option value="Fechado">Fechado</option>
+      </select>
+    </div>
+    <div class="control">
+      <label for="filtroPrioridade">Prioridade</label>
+      <select id="filtroPrioridade">
+        <option value="">Todas</option>
+        <option value="Baixa">Baixa</option>
+        <option value="Media">Media</option>
+        <option value="Alta">Alta</option>
+        <option value="Critica">Critica</option>
+      </select>
+    </div>
+  </section>
+
+  <main>
+    <div id="listaChamados" class="cards"></div>
+    <div id="estadoVazio" class="empty">
+      <h2>Nenhuma O.S. encontrada</h2>
+      <p>Crie uma O.S. para começar o fluxo de atendimento.</p>
+    </div>
+  </main>
+</section>

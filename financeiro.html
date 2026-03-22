@@ -1,0 +1,58 @@
+<section class="section">
+  <div class="section__header">
+    <div>
+      <h2>Financeiro</h2>
+      <p>Valide recebimentos e acompanhe o desempenho por venda e cliente.</p>
+    </div>
+  </div>
+
+  <section class="controls">
+    <div class="control control--grow">
+      <label for="financeiroBusca">Busca</label>
+      <input id="financeiroBusca" type="search" placeholder="Cliente, nº venda ou origem" />
+    </div>
+    <div class="control">
+      <label for="financeiroData">Data</label>
+      <input id="financeiroData" type="date" />
+    </div>
+    <div class="control">
+      <label for="financeiroOrigem">Origem</label>
+      <select id="financeiroOrigem">
+        <option value="">Todas</option>
+        <option value="Direta">Direta</option>
+        <option value="OS">O.S.</option>
+        <option value="Orcamento">Orçamento</option>
+      </select>
+    </div>
+    <div class="control">
+      <label for="financeiroStatus">Status</label>
+      <select id="financeiroStatus">
+        <option value="">Todos</option>
+        <option value="Pendente">Pendente</option>
+        <option value="Parcial">Parcial</option>
+        <option value="Recebido">Recebido</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="summary summary--orcamento">
+    <div class="summary__card">
+      <span>Total vendido</span>
+      <strong id="finTotalVendido">R$ 0,00</strong>
+    </div>
+    <div class="summary__card">
+      <span>Total recebido</span>
+      <strong id="finTotalRecebido">R$ 0,00</strong>
+    </div>
+    <div class="summary__card">
+      <span>Total em aberto</span>
+      <strong id="finTotalAberto">R$ 0,00</strong>
+    </div>
+  </section>
+
+  <div id="financeiroLista" class="cards"></div>
+  <div id="financeiroVazio" class="empty">
+    <h2>Nenhum registro financeiro encontrado</h2>
+    <p>As vendas aparecerão aqui para validação de recebimento.</p>
+  </div>
+</section>
