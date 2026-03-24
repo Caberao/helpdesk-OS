@@ -1,5 +1,6 @@
--- Script simples para iniciar o banco no Supabase (PostgreSQL)
--- Rode no SQL Editor do projeto.
+-- uso opcional
+-- rode no SQL Editor do Supabase
+-- foco: Cliente + O.S. + Vendas + Empresa
 
 create table if not exists public.clientes (
   id text primary key,
@@ -21,21 +22,10 @@ create table if not exists public.ordens_servico (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.orcamentos (
-  numero text primary key,
-  cliente_id text references public.clientes(id),
-  referencia_os text references public.ordens_servico(id),
-  status_venda text not null default 'Aberto',
-  dados jsonb not null default '{}'::jsonb,
-  total numeric(12,2) not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
 create table if not exists public.vendas (
   numero text primary key,
   cliente_id text references public.clientes(id),
-  origem_tipo text not null check (origem_tipo in ('Direta', 'OS', 'Orcamento')),
+  origem_tipo text not null check (origem_tipo in ('Direta', 'OS')),
   origem_id text,
   status_recebimento text not null default 'Pendente' check (status_recebimento in ('Pendente', 'Parcial', 'Recebido')),
   dados jsonb not null default '{}'::jsonb,
@@ -54,7 +44,6 @@ create table if not exists public.empresa (
 );
 
 create index if not exists idx_os_cliente on public.ordens_servico (cliente_id);
-create index if not exists idx_orc_cliente on public.orcamentos (cliente_id);
 create index if not exists idx_vendas_cliente on public.vendas (cliente_id);
 create index if not exists idx_vendas_data on public.vendas (data_venda);
 
@@ -69,3 +58,13 @@ select
 from public.clientes c
 left join public.vendas v on v.cliente_id = c.id
 group by c.id, c.nome_exibicao;
+
+-- opcional: RLS basico
+-- alter table public.clientes enable row level security;
+-- alter table public.ordens_servico enable row level security;
+-- alter table public.vendas enable row level security;
+-- alter table public.empresa enable row level security;
+-- create policy p_cli on public.clientes for all to authenticated using (true) with check (true);
+-- create policy p_os on public.ordens_servico for all to authenticated using (true) with check (true);
+-- create policy p_vd on public.vendas for all to authenticated using (true) with check (true);
+-- create policy p_emp on public.empresa for all to authenticated using (true) with check (true);

@@ -1,63 +1,93 @@
 # Helpdesk Support System
 
-Sistema web para controle de O.S., clientes, orçamentos, vendas e financeiro.
+![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
 
-## Funcionalidades
-- Cadastro de cliente PF/PJ com consulta de CEP.
-- O.S. com peças/serviços, status e financeiro.
-- Orçamento com impressão e integração com O.S.
-- Vendas com origem (`Direta`, `O.S.`, `Orçamento`) e recebimentos.
-- Financeiro com total vendido, recebido e em aberto.
-- Persistência atual no navegador (LocalStorage).
+Sistema web para gestão de `Clientes`, `O.S.`, `Vendas` e `Financeiro`.
 
-## Estrutura
+## Estado Atual
+- Projeto funcional para uso local.
+- Projeto ainda **não está 100% concluído**.
+- Fluxo principal está ativo e usável.
+- Persistência atual do front-end é via `LocalStorage`.
+- Backend local com SQLite já existe, mas integração completa front/API ainda é etapa de evolução.
+
+## Módulos Disponíveis
+- `Dashboard`: visão de O.S., vendas e financeiro por período (`De`/`Até`).
+- `Cliente`: cadastro PF/PJ, busca, edição e visualização.
+- `O.S.`: abertura, edição, visualização, peças/serviços, status técnico e status comercial.
+- `Vendas`: criação direta ou via O.S. aprovada, cálculo de total/desconto e acompanhamento.
+- `Financeiro`: baixa de recebimento, quitação, filtros e impressão de relatório.
+- `Empresa`: dados da empresa, logo e assinatura PNG para documentos.
+- `Documentos`: impressão de recibo com layout customizado.
+
+## Fluxo de Trabalho
+1. Cadastrar cliente.
+2. Abrir O.S.
+3. Definir status comercial da O.S.:
+- `Em orçamento`: não gera venda.
+- `Aprovado`: habilita geração/abertura de venda.
+- `Reprovado`: arquiva O.S. (com reativação manual).
+4. Fechar venda e acompanhar recebimento no financeiro.
+
+## Estrutura de Arquivos
+- Entrada:
+`index.html` (tela inicial), `dashboard.html` (sistema).
 - Front-end:
-`index.html`, `style.css`, `script.js`, `chamados.html`, `clientes.html`, `orcamento.html`, `vendas.html`, `financeiro.html`
-- Back-end local (novo):
-`backend/`
-- Script para Supabase:
-`supabase/simple_schema.sql`
+`style.css`, `chamados.html`, `clientes.html`, `vendas.html`, `financeiro.html`, `js/`.
+- Backend:
+`backend/` (API Node.js com SQLite/PostgreSQL).
+- SQL base:
+`supabase/simple_schema.sql`.
+- Aviso de status para GitHub:
+`AVISO_GITHUB.md`.
 
-## Uso rápido (front atual)
-1. Abra `index.html` no navegador.
-2. Use o menu para acessar `Cliente`, `O.S.`, `Orçamento`, `Vendas` e `Financeiro`.
+## Como Rodar Local (Rápido)
+1. Abra `index.html`.
+2. Clique em `Entrar no sistema`.
+3. Use normalmente os menus do sistema.
 
-## Banco local (Opção 1: SQLite + API local)
+## Persistência Atual (Front)
+Dados salvos no navegador, chaves:
+- `helpdesk.chamados`
+- `helpdesk.clientes`
+- `helpdesk.vendas`
+- `helpdesk.empresa`
+
+Se limpar dados do navegador, os dados locais são perdidos.
+
+## Backend Local (Opcional, preparado)
 1. Entre em `backend/`.
-2. Copie `.env.example` para `.env`.
-3. Deixe:
-`DB_PROVIDER=sqlite`
-4. Instale dependências:
+2. Copie `backend/.env.local.example` para `backend/.env`.
+3. Instale dependências:
 `npm install`
-5. Rode a API:
+4. Inicie a API:
 `npm start`
 
-Banco será criado em:
+Arquivo local do banco SQLite:
 `backend/data/helpdesk.db`
 
-## Banco local em rede (Opção 2: PostgreSQL + API local)
-1. Instale PostgreSQL na máquina servidor da rede.
-2. Crie banco `helpdesk`.
-3. No `backend/.env`, configure:
-- `DB_PROVIDER=postgres`
-- `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`
-4. Rode:
-`npm start`
+## Limitações Conhecidas
+- Sem autenticação de usuários.
+- Sem sincronização multiusuário no modo LocalStorage.
+- Sem integração completa front/API no fluxo padrão atual.
+- Ajustes visuais e refinamentos ainda em andamento.
 
-Com isso, vários computadores da rede podem usar o mesmo backend (apontando para IP da máquina servidor).
+## Melhorias Planejadas
+- Integrar front-end diretamente à API local.
+- Melhorar trilha de auditoria de recebimentos e ações.
+- Expandir testes de regressão por fluxo.
+- Refinar documentos de impressão (layout e conteúdo).
 
-## Supabase (para deixar online)
-- Arquivo de criação simples:
-`supabase/simple_schema.sql`
-- Passos:
-1. Crie o projeto no Supabase.
-2. Abra SQL Editor.
-3. Execute `supabase/simple_schema.sql`.
+## Aviso para Repositório Público
+Use na descrição do GitHub:
 
-Esse script cria tabelas base (`clientes`, `ordens_servico`, `orcamentos`, `vendas`, `empresa`) e uma view simples de vendas por cliente.
+`Projeto em desenvolvimento (não 100% concluído). Funcional para uso local, com melhorias em andamento.`
 
-## Observações
-- Hoje o front ainda usa LocalStorage.
-- O backend foi adicionado para evolução de uso local/rede e migração futura.
-- Próximo passo natural: trocar `script.js` para consumir a API (`/api/...`) em vez do LocalStorage.
+Arquivo pronto:
+`AVISO_GITHUB.md`
+
+## Segurança
+- Não versionar segredos/chaves.
+- A pasta `.local-keys/` deve permanecer local (já ignorada no `.gitignore`).
+- Se alguma chave foi exposta, gere/rotacione uma nova imediatamente.
 

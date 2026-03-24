@@ -4,249 +4,80 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Helpdesk Support System</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Work+Sans:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
     <link rel="icon" href="logo.png" />
-    <link rel="stylesheet" href="style.css" />
+    <style>
+      :root {
+        --bg: radial-gradient(circle at top left, #fbded1, transparent 55%),
+          radial-gradient(circle at 20% 80%, #d4f4ff, transparent 50%),
+          #f2f4f8;
+        --panel: #ffffff;
+        --text: #0f172a;
+        --muted: #5b6476;
+        --primary: #0a7c6b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: "Work Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .start {
+        width: min(560px, calc(100% - 32px));
+        background: var(--panel);
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+        padding: 28px;
+        text-align: center;
+      }
+
+      .start img {
+        width: 92px;
+        height: 92px;
+        border-radius: 24px;
+        object-fit: cover;
+        border: 2px solid #0f172a;
+      }
+
+      .start h1 {
+        margin: 14px 0 8px;
+        font-size: 30px;
+      }
+
+      .start p {
+        margin: 0 0 22px;
+        color: var(--muted);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 180px;
+        padding: 12px 18px;
+        border-radius: 999px;
+        background: var(--primary);
+        border: 1px solid var(--primary);
+        color: #ffffff;
+        font-weight: 700;
+        text-decoration: none;
+      }
+    </style>
   </head>
   <body>
-    <div class="page">
-      <header class="topbar">
-        <div class="brand">
-          <img class="brand__logo" id="logoHeader" src="logo.png" alt="Logo" />
-          <div class="brand__text">
-            <h1 id="tituloHeader">Central de Suporte</h1>
-            <p id="subtituloHeader">Gestão completa de chamados com cadastro PF/PJ.</p>
-          </div>
-        </div>
-        <nav class="topnav">
-          <button class="btn btn--empresa" id="menuEmpresa">Empresa</button>
-          <button class="btn btn--ghost" id="menuCadastroCliente">Cliente</button>
-          <button class="btn btn--ghost" id="menuChamados">O.S.</button>
-          <button class="btn btn--ghost" id="menuOrcamento">Orçamento</button>
-          <button class="btn btn--ghost" id="menuVendas">Vendas</button>
-          <button class="btn btn--ghost" id="menuFinanceiro">Financeiro</button>
-        </nav>
-      </header>
-
-      <section class="summary">
-        <div class="summary__card">
-          <span>Total de O.S.</span>
-          <strong id="totalOsDash">0</strong>
-        </div>
-        <div class="summary__card">
-          <span>O.S. abertas</span>
-          <strong id="totalOsAbertasDash">0</strong>
-        </div>
-        <div class="summary__card">
-          <span>Em atendimento</span>
-          <strong id="totalOsAtendimentoDash">0</strong>
-        </div>
-        <div class="summary__card">
-          <span>Concluídas/Fechadas</span>
-          <strong id="totalOsFechadasDash">0</strong>
-        </div>
-        <div class="summary__card">
-          <span>Total de orçamentos</span>
-          <strong id="totalOrcamentosDash">0</strong>
-        </div>
-        <div class="summary__card">
-          <span>Total de vendas</span>
-          <strong id="totalVendasDash">0</strong>
-        </div>
-      </section>
-
-      
-
-      
-      <div class="overlay" id="chamadosOverlay">
-        <div class="overlay__panel">
-          <header class="overlay__header">
-            <button class="icon-btn" id="fecharChamados" aria-label="Fechar">
-              ✕
-            </button>
-          </header>
-          <div id="chamadosConteudo"></div>
-        </div>
-      </div>
-
-      <div class="overlay" id="clientesOverlay">
-        <div class="overlay__panel">
-          <header class="overlay__header">
-            <button class="icon-btn" id="fecharClientes" aria-label="Fechar">
-              ✕
-            </button>
-          </header>
-          <div id="clientesConteudo"></div>
-        </div>
-      </div>
-
-      <div class="overlay" id="orcamentoOverlay">
-        <div class="overlay__panel">
-          <header class="overlay__header">
-            <button class="icon-btn" id="fecharOrcamento" aria-label="Fechar">
-              ✕
-            </button>
-          </header>
-          <div id="orcamentoConteudo"></div>
-        </div>
-      </div>
-
-      <div class="overlay" id="vendasOverlay">
-        <div class="overlay__panel">
-          <header class="overlay__header">
-            <button class="icon-btn" id="fecharVendas" aria-label="Fechar">
-              ✕
-            </button>
-          </header>
-          <div id="vendasConteudo"></div>
-        </div>
-      </div>
-
-      <div class="overlay" id="financeiroOverlay">
-        <div class="overlay__panel">
-          <header class="overlay__header">
-            <button class="icon-btn" id="fecharFinanceiro" aria-label="Fechar">
-              ✕
-            </button>
-          </header>
-          <div id="financeiroConteudo"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal" id="modal">
-      <div class="modal__content">
-        <header>
-          <div>
-            <h2 id="modalTitulo">Nova O.S.</h2>
-            <p>Selecione o cliente e preencha os dados da ordem de serviço.</p>
-          </div>
-          <button class="icon-btn" id="fecharModal" aria-label="Fechar">
-            ✕
-          </button>
-        </header>
-
-        <form id="formChamado">
-          <div id="clientePickerSection"></div>
-          <div id="chamadoSection"></div>
-          <div id="financeiroSection"></div>
-
-          <footer class="form-actions">
-            <button type="button" class="btn btn--ghost" id="cancelar">Cancelar</button>
-            <button type="submit" class="btn btn--primary" id="salvar">Salvar</button>
-          </footer>
-        </form>
-      </div>
-    </div>
-
-    <div class="modal" id="modalCliente">
-      <div class="modal__content">
-        <header>
-          <div>
-            <h2 id="modalClienteTitulo">Cadastro de cliente</h2>
-            <p>Preencha os dados do cliente PF ou PJ.</p>
-          </div>
-          <button class="icon-btn" id="fecharModalCliente" aria-label="Fechar">
-            ✕
-          </button>
-        </header>
-
-        <form id="formCliente">
-          <div id="clienteSection"></div>
-
-          <footer class="form-actions">
-            <button type="button" class="btn btn--ghost" id="cancelarCliente">Cancelar</button>
-            <button type="submit" class="btn btn--primary" id="salvarCliente">Salvar cliente</button>
-          </footer>
-        </form>
-      </div>
-    </div>
-
-    <div class="modal" id="modalPagamento">
-      <div class="modal__content modal__content--print">
-        <header>
-          <div>
-            <h2 id="modalPagamentoTitulo">Documento</h2>
-            <p>Revise os dados antes de imprimir.</p>
-          </div>
-          <button class="icon-btn" id="fecharModalPagamento" aria-label="Fechar">
-            ✕
-          </button>
-        </header>
-
-        <div class="print-actions">
-          <div class="tabs">
-            <button type="button" class="tab-btn" data-doc="orcamento">Orçamento</button>
-            <button type="button" class="tab-btn" data-doc="recibo">Recibo</button>
-            <button type="button" class="tab-btn" data-doc="pedido">Pedido</button>
-          </div>
-          <button type="button" class="btn btn--primary" id="btnImprimir">Imprimir</button>
-        </div>
-
-        <div id="docConteudo" class="doc-content"></div>
-      </div>
-    </div>
-
-    <div class="modal" id="modalEmpresa">
-      <div class="modal__content">
-        <header>
-          <div>
-            <h2>Dados da empresa</h2>
-            <p>Atualize as informações exibidas nos documentos.</p>
-          </div>
-          <button class="icon-btn" id="fecharModalEmpresa" aria-label="Fechar">
-            ✕
-          </button>
-        </header>
-
-        <form id="formEmpresa">
-          <div class="form-section">
-            <div class="grid">
-              <div class="field">
-                <label for="empresaNome">Nome da empresa</label>
-                <input id="empresaNome" type="text" required />
-              </div>
-              <div class="field">
-                <label for="empresaDocumento">CNPJ/Documento</label>
-                <input id="empresaDocumento" type="text" />
-              </div>
-              <div class="field">
-                <label for="empresaTelefone">Telefone</label>
-                <input id="empresaTelefone" type="text" />
-              </div>
-              <div class="field field--full">
-                <label for="empresaEndereco">Endereço</label>
-                <input id="empresaEndereco" type="text" />
-              </div>
-              <div class="field">
-                <label for="empresaLogo">Logo (arquivo ou URL)</label>
-                <input id="empresaLogo" type="text" />
-                <small class="field__hint">Ex: logo.png ou https://...</small>
-              </div>
-              <div class="field">
-                <label for="empresaTitulo">Título do cabeçalho</label>
-                <input id="empresaTitulo" type="text" />
-              </div>
-              <div class="field field--full">
-                <label for="empresaSubtitulo">Subtítulo do cabeçalho</label>
-                <input id="empresaSubtitulo" type="text" />
-              </div>
-            </div>
-          </div>
-
-          <footer class="form-actions">
-            <button type="button" class="btn btn--ghost" id="cancelarEmpresa">Cancelar</button>
-            <button type="submit" class="btn btn--primary">Salvar</button>
-          </footer>
-        </form>
-      </div>
-    </div>
-
-    <script type="module" src="script.js"></script>
+    <main class="start">
+      <img src="logo.png" alt="Logo" />
+      <h1>Helpdesk O.S.</h1>
+      <p>Painel de atendimento, vendas e financeiro.</p>
+      <a class="btn" href="dashboard.html">Entrar no sistema</a>
+    </main>
   </body>
 </html>

@@ -3,12 +3,14 @@ import { clientePickerSection } from "./cliente-picker.js";
 import { chamadoSection } from "./chamado-section.js";
 import { financeiroSection } from "./financeiro-section.js";
 
+// base
 const storageKey = "helpdesk.chamados";
 const storageClientKey = "helpdesk.clientes";
 const storageCompanyKey = "helpdesk.empresa";
 const storageBudgetKey = "helpdesk.orcamentos";
 const storageSalesKey = "helpdesk.vendas";
 
+// dom
 const clienteContainer = document.getElementById("clienteSection");
 const clientePickerContainer = document.getElementById("clientePickerSection");
 const chamadoContainer = document.getElementById("chamadoSection");
@@ -21,12 +23,14 @@ if (clienteContainer && clientePickerContainer && chamadoContainer && financeiro
   financeiroContainer.innerHTML = financeiroSection;
 }
 
+// data
 const state = {
   chamados: [],
   clientes: [],
   orcamentos: [],
   vendas: [],
   editId: null,
+  editClienteId: null,
 };
 
 let companyInfo = {
@@ -35,6 +39,7 @@ let companyInfo = {
   endereco: "Rua Exemplo, 100 - Centro - Cidade/UF",
   telefone: "(00) 0000-0000",
   logo: "logo.png",
+  assinatura: "",
   titulo: "Central de Suporte",
   subtitulo: "Gestão completa de chamados com cadastro PF/PJ.",
 };
@@ -46,6 +51,7 @@ let editingOrcamentoNumero = null;
 let pendingVendaPrefill = null;
 let editingVendaNumero = null;
 
+// refs
 const elements = {
   lista: null,
   vazio: null,
@@ -55,10 +61,17 @@ const elements = {
   totalFechados: null,
   totalDash: document.getElementById("totalOsDash"),
   totalAbertosDash: document.getElementById("totalOsAbertasDash"),
-  totalAtendimentoDash: document.getElementById("totalOsAtendimentoDash"),
   totalFechadosDash: document.getElementById("totalOsFechadasDash"),
-  totalOrcamentosDash: document.getElementById("totalOrcamentosDash"),
-  totalVendasDash: document.getElementById("totalVendasDash"),
+  totalOsOrcamentoDash: document.getElementById("totalOsOrcamentoDash"),
+  totalVendasQtdDash: document.getElementById("totalVendasQtdDash"),
+  totalVendasDiaDash: document.getElementById("totalVendasDiaDash"),
+  finTotalVendidoDash: document.getElementById("finTotalVendidoDash"),
+  finTotalRecebidoDash: document.getElementById("finTotalRecebidoDash"),
+  finTotalAbertoDash: document.getElementById("finTotalAbertoDash"),
+  finRecebidoHojeDash: document.getElementById("finRecebidoHojeDash"),
+  dashDataInicio: document.getElementById("dashDataInicio"),
+  dashDataFim: document.getElementById("dashDataFim"),
+  dashPeriodoInfo: document.getElementById("dashPeriodoInfo"),
   filtroPrioridade: null,
   filtroStatus: null,
   filtroData: null,
@@ -70,9 +83,6 @@ const elements = {
   clientesOverlay: document.getElementById("clientesOverlay"),
   clientesConteudo: document.getElementById("clientesConteudo"),
   fecharClientes: document.getElementById("fecharClientes"),
-  orcamentoOverlay: document.getElementById("orcamentoOverlay"),
-  orcamentoConteudo: document.getElementById("orcamentoConteudo"),
-  fecharOrcamento: document.getElementById("fecharOrcamento"),
   vendasOverlay: document.getElementById("vendasOverlay"),
   vendasConteudo: document.getElementById("vendasConteudo"),
   fecharVendas: document.getElementById("fecharVendas"),
@@ -81,7 +91,6 @@ const elements = {
   fecharFinanceiro: document.getElementById("fecharFinanceiro"),
   menuChamados: document.getElementById("menuChamados"),
   menuCadastroCliente: document.getElementById("menuCadastroCliente"),
-  menuOrcamento: document.getElementById("menuOrcamento"),
   menuVendas: document.getElementById("menuVendas"),
   menuPedido: document.getElementById("menuPedido"),
   menuFinanceiro: document.getElementById("menuFinanceiro"),
@@ -115,6 +124,8 @@ const elements = {
   empresaEndereco: document.getElementById("empresaEndereco"),
   empresaTelefone: document.getElementById("empresaTelefone"),
   empresaLogo: document.getElementById("empresaLogo"),
+  empresaAssinatura: document.getElementById("empresaAssinatura"),
+  empresaAssinaturaFile: document.getElementById("empresaAssinaturaFile"),
   logoHeader: document.getElementById("logoHeader"),
   empresaTitulo: document.getElementById("empresaTitulo"),
   empresaSubtitulo: document.getElementById("empresaSubtitulo"),
@@ -286,6 +297,7 @@ const financeiroElements = {
   data: null,
   origem: null,
   status: null,
+  imprimir: null,
   totalVendido: null,
   totalRecebido: null,
   totalAberto: null,
@@ -436,6 +448,7 @@ const createClienteCard = (cliente) => {
     </div>
     <div class="card__actions card__actions--inline">
       <button type="button" class="btn btn--ghost" data-view-cliente="${cliente.id}">Ver dados</button>
+      <button type="button" class="btn btn--ghost" data-edit-cliente="${cliente.id}">Editar</button>
     </div>
   `;
   card.querySelector("[data-view-cliente]")?.addEventListener("click", () => {
@@ -443,6 +456,9 @@ const createClienteCard = (cliente) => {
     elements.modalPagamentoTitulo.textContent = "Dados do cliente";
     setPagamentoActionsVisible(false);
     setPagamentoModalOpen(true);
+  });
+  card.querySelector("[data-edit-cliente]")?.addEventListener("click", () => {
+    openClienteEdit(cliente.id);
   });
   return card;
 };
@@ -753,6 +769,7 @@ const populateOrcamentoClientes = () => {
   updateOrcamentoClienteLinkState();
 };
 
+// util
 const parseMoney = (value) => {
   if (!value) {
     return 0;
@@ -784,6 +801,7 @@ const parseMoney = (value) => {
 const getOsBodyByType = (type) =>
   type === "peca" ? osElements.tabelaPecasBody : osElements.tabelaServicosBody;
 
+// os
 const addOsRow = (type, initialData = {}) => {
   const body = getOsBodyByType(type);
   if (!body) {
@@ -923,8 +941,7 @@ const loadOsTablesFromChamado = (chamado) => {
   if (osElements.tabelaServicosBody) {
     osElements.tabelaServicosBody.innerHTML = "";
   }
-  const pecas = chamado.servico.pecas || [];
-  const servicos = chamado.servico.servicos || [];
+  const { pecas, servicos } = getChamadoItens(chamado);
   pecas.forEach((item) => addOsRow("peca", item));
   servicos.forEach((item) => addOsRow("servico", item));
   updateOsTotals();
@@ -1033,7 +1050,61 @@ const getRowsData = (type) => {
     .filter((item) => item.descricao || item.qtde || item.precoUn);
 };
 
-const getRowsTotal = (rows) => rows.reduce((acc, item) => acc + item.total, 0);
+const getRowsTotal = (rows) =>
+  rows.reduce((acc, item) => {
+    const raw = item?.total;
+    const total =
+      typeof raw === "number" ? raw : parseMoney(raw ?? item?.valorTotal ?? 0);
+    return acc + (Number.isFinite(total) ? total : 0);
+  }, 0);
+
+const normalizeItemRow = (item, index) => {
+  const qtde = Number.isFinite(Number(item?.qtde))
+    ? Number(item.qtde)
+    : parseMoney(item?.qtde || "0");
+  const precoUn = Number.isFinite(Number(item?.precoUn))
+    ? Number(item.precoUn)
+    : parseMoney(item?.precoUn ?? item?.preco ?? item?.valorUnitario ?? "0");
+  const totalInformado = Number.isFinite(Number(item?.total))
+    ? Number(item.total)
+    : parseMoney(item?.total ?? item?.valorTotal ?? "0");
+  const total = totalInformado > 0 ? totalInformado : qtde * precoUn;
+  return {
+    numero: Number(item?.numero) || index + 1,
+    descricao: String(item?.descricao || item?.nome || item?.item || "").trim(),
+    un: String(item?.un || item?.unidade || "UN").trim(),
+    qtde,
+    precoUn,
+    total,
+  };
+};
+
+const getChamadoItens = (chamado) => {
+  const servico = chamado?.servico || {};
+  const mapRows = (rows) =>
+    rows
+      .map((item, index) => normalizeItemRow(item, index))
+      .filter((item) => item.descricao || item.qtde || item.precoUn || item.total);
+
+  const pecas = Array.isArray(servico.pecas) ? [...servico.pecas] : [];
+  const servicos = Array.isArray(servico.servicos) ? [...servico.servicos] : [];
+
+  if (!pecas.length && !servicos.length && Array.isArray(servico.itens)) {
+    servico.itens.forEach((item) => {
+      const tipo = String(item?.tipo || item?.itemTipo || "").toLowerCase();
+      if (tipo.includes("serv")) {
+        servicos.push(item);
+      } else {
+        pecas.push(item);
+      }
+    });
+  }
+
+  return {
+    pecas: mapRows(pecas),
+    servicos: mapRows(servicos),
+  };
+};
 
 const updateOrcamentoTotals = () => {
   const totalPecas = getRowsTotal(getRowsData("peca"));
@@ -1406,126 +1477,16 @@ const printOrcamento = () => {
   printWindow.print();
 };
 
-const bindOrcamentoEvents = () => {
-  if (orcamentoBound) {
-    return;
-  }
-  orcamentoElements.novo?.addEventListener("click", () => {
-    resetOrcamentoForm();
-    showOrcamentoEditor();
-  });
-  orcamentoElements.btnVoltar?.addEventListener("click", showOrcamentoList);
-  orcamentoElements.btnGerarVenda?.addEventListener("click", () => {
-    const numero = editingOrcamentoNumero || orcamentoElements.numero?.value || "";
-    openVendaFromOrcamento(numero);
-  });
-  orcamentoElements.busca?.addEventListener("input", renderOrcamentosList);
-  orcamentoElements.filtroData?.addEventListener("change", renderOrcamentosList);
-  orcamentoElements.addItemPeca?.addEventListener("click", () => addOrcamentoRow("peca"));
-  orcamentoElements.addItemServico?.addEventListener("click", () =>
-    addOrcamentoRow("servico")
-  );
-  orcamentoElements.clienteModo?.addEventListener("change", toggleOrcamentoClienteFields);
-  orcamentoElements.clienteId?.addEventListener("change", updateOrcamentoClienteLinkState);
-  orcamentoElements.toggleClienteDados?.addEventListener(
-    "click",
-    openOrcamentoClienteConferencia
-  );
-  orcamentoElements.btnSalvar?.addEventListener("click", saveOrcamento);
-  orcamentoElements.btnImprimir?.addEventListener("click", printOrcamento);
-  orcamentoElements.observacoes?.addEventListener("input", (event) => {
-    autoGrowTextarea(event.target);
-  });
-  orcamentoBound = true;
-};
+// Fluxo de orçamento avulso foi removido.
+// Mantemos apenas "status de orçamento" e impressão de orçamento dentro da O.S.
+const bindOrcamentoEvents = () => {};
+const loadOrcamentoPanel = async () => {};
+const openOrcamentoPanel = async () => {};
+const closeOrcamentoPanel = () => {};
+const applyOrcamentoFromOsData = () => {};
+const openOrcamentoFromOs = async () => {};
 
-const loadOrcamentoPanel = async () => {
-  if (orcamentoLoaded) {
-    return;
-  }
-  try {
-    const response = await fetch("orcamento.html");
-    if (!response.ok) {
-      throw new Error("Nao foi possivel carregar a tela de orçamento.");
-    }
-    const html = await response.text();
-    if (elements.orcamentoConteudo) {
-      elements.orcamentoConteudo.innerHTML = html;
-      cacheOrcamentoElements();
-      populateOrcamentoClientes();
-      bindOrcamentoEvents();
-      resetOrcamentoForm();
-    }
-    orcamentoLoaded = true;
-  } catch (error) {
-    if (elements.orcamentoConteudo) {
-      elements.orcamentoConteudo.innerHTML =
-        '<p style="color:#991b1b;">Erro ao carregar orçamento. Recarregue a pagina.</p>';
-    }
-  }
-};
-
-const openOrcamentoPanel = async () => {
-  await loadOrcamentoPanel();
-  populateOrcamentoClientes();
-  showOrcamentoList();
-  if (pendingOrcamentoFromOs) {
-    resetOrcamentoForm();
-    applyOrcamentoFromOsData(pendingOrcamentoFromOs);
-    pendingOrcamentoFromOs = null;
-  }
-  elements.orcamentoOverlay?.classList.add("show");
-};
-
-const closeOrcamentoPanel = () => {
-  elements.orcamentoOverlay?.classList.remove("show");
-};
-
-const applyOrcamentoFromOsData = (chamado) => {
-  if (!orcamentoElements.numero || !orcamentoElements.data) {
-    return;
-  }
-  orcamentoElements.numero.value = generateBudgetNumber();
-  orcamentoElements.data.value = chamado.servico.dataEntrada || orcamentoElements.data.value;
-  if (orcamentoElements.clienteModo) {
-    orcamentoElements.clienteModo.value = "cadastrado";
-  }
-  if (orcamentoElements.clienteId) {
-    orcamentoElements.clienteId.value = chamado.clienteId || "";
-  }
-  updateOrcamentoReferenciaOs(chamado.id || "");
-  if (orcamentoElements.observacoes) {
-    orcamentoElements.observacoes.value = "";
-    autoGrowTextarea(orcamentoElements.observacoes);
-  }
-  toggleOrcamentoClienteFields();
-
-  if (orcamentoElements.tabelaPecasBody) {
-    orcamentoElements.tabelaPecasBody.innerHTML = "";
-  }
-  if (orcamentoElements.tabelaServicosBody) {
-    orcamentoElements.tabelaServicosBody.innerHTML = "";
-  }
-
-  const pecas = chamado.servico.pecas || [];
-  const servicos = chamado.servico.servicos || [];
-
-  pecas.forEach((item) => addOrcamentoRow("peca", item));
-  servicos.forEach((item) => addOrcamentoRow("servico", item));
-  updateOrcamentoTotals();
-  showOrcamentoEditor();
-};
-
-const openOrcamentoFromOs = async (chamadoId) => {
-  const chamado = getChamadoById(chamadoId);
-  if (!chamado) {
-    return;
-  }
-  pendingOrcamentoFromOs = chamado;
-  closeChamadosPanel();
-  await openOrcamentoPanel();
-};
-
+// venda
 const cacheVendasElements = () => {
   vendasElements.listaSection = document.getElementById("vendasListaSection");
   vendasElements.editorSection = document.getElementById("vendasEditorSection");
@@ -1564,6 +1525,7 @@ const cacheFinanceiroElements = () => {
   financeiroElements.data = document.getElementById("financeiroData");
   financeiroElements.origem = document.getElementById("financeiroOrigem");
   financeiroElements.status = document.getElementById("financeiroStatus");
+  financeiroElements.imprimir = document.getElementById("financeiroImprimir");
   financeiroElements.totalVendido = document.getElementById("finTotalVendido");
   financeiroElements.totalRecebido = document.getElementById("finTotalRecebido");
   financeiroElements.totalAberto = document.getElementById("finTotalAberto");
@@ -1708,7 +1670,7 @@ const getVendaItensByType = (type = "peca") => {
       const precoUn = Number(precoInput?.dataset.valor || parseMoney(precoInput?.value || "0"));
       return {
         numero: index + 1,
-        tipo,
+        tipo: type,
         descricao,
         un,
         qtde,
@@ -1724,8 +1686,44 @@ const getVendaItens = () => [
   ...getVendaItensByType("servico"),
 ];
 
+const getVendaBrutoFromTables = () => {
+  const getTotalByBody = (body) => {
+    if (!body) {
+      return 0;
+    }
+    return Array.from(body.querySelectorAll("tr")).reduce((acc, row) => {
+      const qtde = parseMoney(row.querySelector(".venda-qtde")?.value || "0");
+      const precoInput = row.querySelector(".venda-preco");
+      const preco = Number(
+        precoInput?.dataset.valor || parseMoney(precoInput?.value || "0")
+      );
+      return acc + qtde * (Number.isFinite(preco) ? preco : 0);
+    }, 0);
+  };
+  return (
+    getTotalByBody(vendasElements.tabelaItensBody) +
+    getTotalByBody(vendasElements.tabelaServicosBody)
+  );
+};
+
+const getVendaBrutoFromRenderedTotals = () => {
+  const getByBody = (body) => {
+    if (!body) {
+      return 0;
+    }
+    return Array.from(body.querySelectorAll(".orcamento-table__total")).reduce(
+      (acc, cell) => acc + parseMoney(cell.textContent || "0"),
+      0
+    );
+  };
+  return getByBody(vendasElements.tabelaItensBody) + getByBody(vendasElements.tabelaServicosBody);
+};
+
 const recalcVendaResumo = () => {
-  const bruto = getRowsTotal(getVendaItens());
+  const brutoItens = getRowsTotal(getVendaItens());
+  const brutoTabela = getVendaBrutoFromTables();
+  const brutoRender = getVendaBrutoFromRenderedTotals();
+  const bruto = Number(Math.max(brutoItens, brutoTabela, brutoRender).toFixed(2));
   const descontoInfo = parseVendaDesconto(vendasElements.descontoValor?.value || "", bruto);
   const outros = Number(
     vendasElements.outrosValores?.dataset.valor ||
@@ -1815,20 +1813,34 @@ const resetVendaForm = () => {
   if (vendasElements.tabelaServicosBody) {
     vendasElements.tabelaServicosBody.innerHTML = "";
   }
-  vendasElements.valorTotal.value = "";
-  vendasElements.valorTotal.dataset.valor = "";
-  vendasElements.descontoValor.value = "";
-  vendasElements.descontoValor.dataset.valor = "";
-  vendasElements.descontoValor.dataset.tipo = "Nenhum";
-  vendasElements.descontoValor.dataset.percentual = "0";
-  vendasElements.outrosValores.value = "";
-  vendasElements.outrosValores.dataset.valor = "";
-  vendasElements.valorFinal.value = "";
-  vendasElements.valorFinal.dataset.valor = "";
-  vendasElements.valorRecebido.value = "";
-  vendasElements.valorRecebido.dataset.valor = "";
-  vendasElements.metodoPagamento.value = "Nao informado";
-  vendasElements.status.value = "Pendente";
+  if (vendasElements.valorTotal) {
+    vendasElements.valorTotal.value = "";
+    vendasElements.valorTotal.dataset.valor = "";
+  }
+  if (vendasElements.descontoValor) {
+    vendasElements.descontoValor.value = "";
+    vendasElements.descontoValor.dataset.valor = "";
+    vendasElements.descontoValor.dataset.tipo = "Nenhum";
+    vendasElements.descontoValor.dataset.percentual = "0";
+  }
+  if (vendasElements.outrosValores) {
+    vendasElements.outrosValores.value = "";
+    vendasElements.outrosValores.dataset.valor = "";
+  }
+  if (vendasElements.valorFinal) {
+    vendasElements.valorFinal.value = "";
+    vendasElements.valorFinal.dataset.valor = "";
+  }
+  if (vendasElements.valorRecebido) {
+    vendasElements.valorRecebido.value = "";
+    vendasElements.valorRecebido.dataset.valor = "";
+  }
+  if (vendasElements.metodoPagamento) {
+    vendasElements.metodoPagamento.value = "Nao informado";
+  }
+  if (vendasElements.status) {
+    vendasElements.status.value = "Pendente";
+  }
   toggleVendaClienteFields();
   recalcVendaResumo();
 };
@@ -1872,11 +1884,21 @@ const saveVenda = () => {
     alert("Preencha Descrição, UN, Qtde e Preço un dos itens da venda.");
     return;
   }
-  const valorRecebido = Number(vendasElements.valorRecebido.dataset.valor || "0");
+  const vendaAnterior = editingVendaNumero
+    ? state.vendas.find((item) => item.numero === editingVendaNumero)
+    : null;
+  const recebidoAnterior = Number(vendaAnterior?.valorRecebido || 0);
+  let valorRecebido = recebidoAnterior;
+  if (!vendaAnterior) {
+    valorRecebido = 0;
+  }
+  if (vendasElements.status?.value === "Recebido") {
+    valorRecebido = valorTotal;
+  }
   const statusAuto = getVendaStatusByValues(
     valorTotal,
     valorRecebido,
-    vendasElements.status.value
+    vendasElements.status?.value || "Pendente"
   );
   const venda = {
     numero: editingVendaNumero || vendasElements.numero.value,
@@ -1900,13 +1922,22 @@ const saveVenda = () => {
     ),
     valorTotal: Number(valorTotal.toFixed(2)),
     valorRecebido: Number(valorRecebido.toFixed(2)),
-    metodoPagamento: vendasElements.metodoPagamento.value,
+    metodoPagamento: vendasElements.metodoPagamento?.value || "Nao informado",
     statusRecebimento: statusAuto,
+    historicoRecebimentos: Array.isArray(vendaAnterior?.historicoRecebimentos)
+      ? [...vendaAnterior.historicoRecebimentos]
+      : [],
     createdAt: editingVendaNumero
-      ? state.vendas.find((item) => item.numero === editingVendaNumero)?.createdAt ||
-        new Date().toISOString()
+      ? vendaAnterior?.createdAt || new Date().toISOString()
       : new Date().toISOString(),
   };
+  const deltaRecebido = Number((venda.valorRecebido - recebidoAnterior).toFixed(2));
+  if (deltaRecebido > 0) {
+    venda.historicoRecebimentos.push({
+      data: todayIso(),
+      valor: deltaRecebido,
+    });
+  }
   state.vendas = state.vendas.filter((item) => item.numero !== venda.numero);
   state.vendas.unshift(venda);
   saveVendas();
@@ -1917,15 +1948,6 @@ const saveVenda = () => {
       chamado.servico.statusServico = "Concluida";
       saveChamados();
       render();
-    }
-  }
-  if (venda.origemTipo === "Orcamento") {
-    const orcamento = state.orcamentos.find((item) => item.numero === venda.origemId);
-    if (orcamento) {
-      orcamento.statusVenda = "Vendido";
-      saveOrcamentos();
-      renderSummary();
-      renderOrcamentosList();
     }
   }
   alert(`Venda #${venda.numero} salva.`);
@@ -1977,15 +1999,384 @@ const loadVendaIntoEditor = (venda) => {
   vendasElements.valorFinal.value = venda.valorTotal
     ? formatCurrency(venda.valorTotal.toFixed(2))
     : "";
-  vendasElements.valorRecebido.dataset.valor = String(venda.valorRecebido || 0);
-  vendasElements.valorRecebido.value = venda.valorRecebido
-    ? formatCurrency(venda.valorRecebido.toFixed(2))
-    : "";
-  vendasElements.metodoPagamento.value = venda.metodoPagamento || "Nao informado";
-  vendasElements.status.value = venda.statusRecebimento || "Pendente";
+  if (vendasElements.valorRecebido) {
+    vendasElements.valorRecebido.dataset.valor = String(venda.valorRecebido || 0);
+    vendasElements.valorRecebido.value = venda.valorRecebido
+      ? formatCurrency(venda.valorRecebido.toFixed(2))
+      : "";
+  }
+  if (vendasElements.metodoPagamento) {
+    vendasElements.metodoPagamento.value = venda.metodoPagamento || "Nao informado";
+  }
+  if (vendasElements.status) {
+    vendasElements.status.value = venda.statusRecebimento || "Pendente";
+  }
   recalcVendaItens();
   toggleVendaClienteFields();
   showVendasEditor();
+};
+
+const buildVendaViewHTML = (venda) => {
+  const pecas = venda.pecas || venda.itens || [];
+  const servicos = venda.servicos || [];
+  const renderRows = (rows) =>
+    rows
+      .map(
+        (item) => `
+      <tr>
+        <td>${item.numero || "-"}</td>
+        <td>${item.descricao || "-"}</td>
+        <td>${item.un || "-"}</td>
+        <td>${Number(item.qtde || 0).toFixed(2).replace(".", ",")}</td>
+        <td>${formatCurrency(Number(item.precoUn || 0).toFixed(2))}</td>
+        <td>${formatCurrency(Number(item.total || 0).toFixed(2))}</td>
+      </tr>
+    `
+      )
+      .join("");
+
+  return `
+    <div class="doc-header">
+      <div>
+        <h3>Venda #${venda.numero}</h3>
+        <div class="doc-meta">
+          <span>${companyInfo.nome}</span>
+          <span>${companyInfo.documento}</span>
+        </div>
+      </div>
+      <img class="doc-logo" src="${companyInfo.logo || "logo.png"}" alt="Logo" />
+    </div>
+    <div class="doc-section">
+      <strong>Resumo</strong>
+      <span>Cliente: ${getClienteNomeByVenda(venda)}</span>
+      <span>Data: ${formatDate(venda.dataVenda) || "-"}</span>
+      <span>Origem: ${venda.origemTipo} ${venda.origemId ? `#${venda.origemId}` : ""}</span>
+      <span>Tipo de pagamento: ${venda.metodoPagamento || "Nao informado"}</span>
+      <span>Status de recebimento: ${venda.statusRecebimento || "Pendente"}</span>
+    </div>
+    <div class="doc-section">
+      <strong>Peças</strong>
+      ${
+        pecas.length
+          ? `<div class="table-scroll"><table class="orcamento-table"><thead><tr><th>Nº</th><th>Descrição</th><th>Un</th><th>Qtde</th><th>Preço un</th><th>Total</th></tr></thead><tbody>${renderRows(
+              pecas
+            )}</tbody></table></div>`
+          : "<span>Sem peças.</span>"
+      }
+    </div>
+    <div class="doc-section">
+      <strong>Serviços</strong>
+      ${
+        servicos.length
+          ? `<div class="table-scroll"><table class="orcamento-table"><thead><tr><th>Nº</th><th>Descrição</th><th>Un</th><th>Qtde</th><th>Preço un</th><th>Total</th></tr></thead><tbody>${renderRows(
+              servicos
+            )}</tbody></table></div>`
+          : "<span>Sem serviços.</span>"
+      }
+      <span><strong>Total:</strong> ${formatCurrency(Number(venda.valorTotal || 0).toFixed(2))}</span>
+      <span><strong>Recebido:</strong> ${formatCurrency(Number(venda.valorRecebido || 0).toFixed(2))}</span>
+      <span><strong>Em aberto:</strong> ${formatCurrency(
+        Math.max(0, Number(venda.valorTotal || 0) - Number(venda.valorRecebido || 0)).toFixed(2)
+      )}</span>
+    </div>
+  `;
+};
+
+const getVendaResumoCurto = (venda) => {
+  const itens = [...(venda.servicos || []), ...(venda.pecas || venda.itens || [])];
+  const palavras = itens
+    .map((item) => String(item?.descricao || "").trim())
+    .filter(Boolean)
+    .slice(0, 4);
+  if (!palavras.length) {
+    return "Atendimento comercial concluído.";
+  }
+  return palavras.join(" · ");
+};
+
+const printVendaRecibo = (venda) => {
+  const cliente =
+    venda.clienteModo === "cadastrado" ? getClienteById(venda.clienteId) : null;
+  const clienteNome = getClienteNomeByVenda(venda);
+  const clienteDoc = cliente
+    ? cliente.tipoCadastro === "PF"
+      ? `CPF: ${cliente.cliente.cpf || "-"}`
+      : `CNPJ: ${cliente.cliente.cnpj || "-"}`
+    : "Documento: -";
+  const clienteContato = cliente
+    ? `${cliente.contato?.whatsapp || "-"} · ${cliente.contato?.email || "-"}`
+    : "-";
+  const clienteEndereco = cliente
+    ? `${cliente.endereco?.rua || "-"}, ${cliente.endereco?.numero || "-"} - ${
+        cliente.endereco?.bairro || "-"
+      } - ${cliente.endereco?.cidade || "-"}/${cliente.endereco?.uf || "-"}`
+    : "-";
+  const valorTotal = Number(venda.valorTotal || 0);
+  const valorRecebidoAtual = Number(venda.valorRecebido || 0);
+  const valorRecibo =
+    valorRecebidoAtual > 0
+      ? valorRecebidoAtual
+      : venda.statusRecebimento === "Recebido"
+      ? valorTotal
+      : 0;
+  const origem =
+    venda.origemTipo === "Direta"
+      ? "Venda direta"
+      : `${venda.origemTipo || "-"} #${venda.origemId || "-"}`;
+  const resumoCurto = getVendaResumoCurto(venda);
+  const assinaturaEmpresa = companyInfo.assinatura || "";
+
+  if (valorRecibo <= 0) {
+    alert(
+      "Sem valor recebido para gerar recibo. Registre o recebimento no Financeiro ou marque a venda como Recebido."
+    );
+    return;
+  }
+
+  const printWindow = window.open("", "_blank", "width=980,height=720");
+  if (!printWindow) {
+    alert("Nao foi possivel abrir a janela de impressao.");
+    return;
+  }
+
+  printWindow.document.write(`
+    <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8" />
+        <title>Recibo venda #${venda.numero}</title>
+        <style>
+          :root {
+            --ink: #0f172a;
+            --muted: #475569;
+            --line: #d7e0eb;
+            --brand: #0a7c6b;
+          }
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            padding: 18px;
+            background: #eef2f7;
+            color: var(--ink);
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+          }
+          .sheet {
+            width: 190mm;
+            max-width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 18px 20px 20px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+          }
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            border-bottom: 2px solid var(--line);
+            padding-bottom: 12px;
+          }
+          .brand {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+          }
+          .logo {
+            width: 62px;
+            height: 62px;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+          }
+          .title {
+            margin: 0 0 6px;
+            font-size: 20px;
+            letter-spacing: 0.02em;
+          }
+          .meta {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+          }
+          .badge {
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: #e7f7f4;
+            color: #075e52;
+            border: 1px solid #b5e5dc;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            white-space: nowrap;
+          }
+          .grid, .resumo {
+            margin-top: 12px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 11px 12px;
+            background: #fcfdff;
+          }
+          .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            font-size: 14px;
+          }
+          .full { grid-column: 1 / -1; }
+          .muted { color: var(--muted); }
+          .resumo-title {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 4px;
+          }
+          .resumo p {
+            margin: 0;
+            font-size: 14px;
+          }
+          .amount-box {
+            margin-top: 12px;
+            border: 2px dashed #b5e5dc;
+            border-radius: 12px;
+            padding: 14px;
+            background: #f7fffd;
+          }
+          .amount-label {
+            font-size: 13px;
+            color: #0f766e;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+          }
+          .amount {
+            margin-top: 4px;
+            font-size: 34px;
+            font-weight: 800;
+            color: #065f52;
+          }
+          .text {
+            margin-top: 12px;
+            font-size: 14px;
+            line-height: 1.55;
+          }
+          .footer-one {
+            margin-top: 28px;
+            display: flex;
+            justify-content: flex-end;
+          }
+          .sign-company {
+            width: 260px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
+          }
+          .sign-image {
+            max-width: 100%;
+            max-height: 72px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 6px;
+          }
+          .sign-line {
+            border-top: 1px solid #334155;
+            height: 1px;
+            margin: 22px 0 8px;
+          }
+          @media print {
+            body { background: #fff; padding: 0; }
+            .sheet {
+              width: auto;
+              border: none;
+              border-radius: 0;
+              box-shadow: none;
+              padding: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <section class="sheet">
+          <header class="header">
+            <div class="brand">
+              <img class="logo" src="${companyInfo.logo || "logo.png"}" alt="Logo" />
+              <div>
+                <h1 class="title">Recibo #${venda.numero}</h1>
+                <div class="meta">
+                  ${companyInfo.nome || "-"}<br />
+                  ${companyInfo.documento || "-"}<br />
+                  ${companyInfo.endereco || "-"}<br />
+                  ${companyInfo.telefone || "-"}
+                </div>
+              </div>
+            </div>
+            <span class="badge">Recibo</span>
+          </header>
+
+          <section class="grid">
+            <div><strong>Cliente:</strong> ${clienteNome}</div>
+            <div><strong>Data:</strong> ${formatDate(venda.dataVenda) || "-"}</div>
+            <div><strong>Documento:</strong> ${clienteDoc}</div>
+            <div><strong>Origem:</strong> ${origem}</div>
+            <div><strong>Contato:</strong> ${clienteContato}</div>
+            <div><strong>Pagamento:</strong> ${venda.metodoPagamento || "Nao informado"}</div>
+            <div class="full"><strong>Endereco:</strong> ${clienteEndereco}</div>
+          </section>
+
+          <section class="resumo">
+            <div class="resumo-title">Resumo do serviço/venda</div>
+            <p>${resumoCurto}</p>
+          </section>
+
+          <section class="amount-box">
+            <div class="amount-label">Valor Recebido</div>
+            <div class="amount">${formatCurrency(valorRecibo.toFixed(2))}</div>
+          </section>
+
+          <p class="text">
+            Recebemos de <strong>${clienteNome}</strong> o valor acima referente a venda
+            <strong>#${venda.numero}</strong>. Valor total da venda:
+            <strong>${formatCurrency(valorTotal.toFixed(2))}</strong>.
+          </p>
+
+          <footer class="footer-one">
+            <div class="sign-company">
+              ${
+                assinaturaEmpresa
+                  ? `<img class="sign-image" src="${assinaturaEmpresa}" alt="Assinatura da empresa" />`
+                  : '<div class="sign-line"></div>'
+              }
+              <div>Assinatura da empresa</div>
+            </div>
+          </footer>
+        </section>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+};
+
+const openVendaView = (venda) => {
+  if (!venda) {
+    return;
+  }
+  setPagamentoActionsVisible(false);
+  elements.modalPagamentoTitulo.textContent = `Visualizar venda #${venda.numero}`;
+  elements.docConteudo.innerHTML = `
+    <div class="doc-actions">
+      <button type="button" class="btn btn--primary" id="btnVendaImprimirRecibo">
+        Recibo
+      </button>
+    </div>
+    ${buildVendaViewHTML(venda)}
+  `;
+  document
+    .getElementById("btnVendaImprimirRecibo")
+    ?.addEventListener("click", () => printVendaRecibo(venda));
+  setPagamentoModalOpen(true);
 };
 
 const createVendaCard = (venda) => {
@@ -2013,11 +2404,15 @@ const createVendaCard = (venda) => {
           : `${venda.origemTipo} #${venda.origemId || "-"}`
       }</span>
     </div>
-    <div class="card__actions card__actions--inline">
+    <div class="card__actions card__actions--inline card__actions--venda">
+      <button type="button" class="btn btn--ghost" data-view-venda="${venda.numero}">Visualizar</button>
       <button type="button" class="btn btn--ghost" data-edit-venda="${venda.numero}">Editar</button>
       <button type="button" class="btn btn--ghost" data-delete-venda="${venda.numero}">Excluir</button>
     </div>
   `;
+  card.querySelector("[data-view-venda]")?.addEventListener("click", () => {
+    openVendaView(venda);
+  });
   card.querySelector("[data-edit-venda]")?.addEventListener("click", () => {
     loadVendaIntoEditor(venda);
   });
@@ -2075,6 +2470,13 @@ const renderVendasList = () => {
   vendasElements.vazio.style.display = vendas.length ? "none" : "block";
 };
 
+const setVendasDataHoje = () => {
+  if (!vendasElements.filtroData) {
+    return;
+  }
+  vendasElements.filtroData.value = todayIso();
+};
+
 const bindVendasEvents = () => {
   if (vendasBound) {
     return;
@@ -2086,6 +2488,19 @@ const bindVendasEvents = () => {
   vendasElements.voltar?.addEventListener("click", showVendasList);
   vendasElements.busca?.addEventListener("input", renderVendasList);
   vendasElements.filtroData?.addEventListener("change", renderVendasList);
+  document.querySelectorAll("[data-vendas-clear]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetId = button.getAttribute("data-vendas-clear");
+      if (!targetId) {
+        return;
+      }
+      const input = document.getElementById(targetId);
+      if (input) {
+        input.value = "";
+      }
+      renderVendasList();
+    });
+  });
   vendasElements.filtroOrigem?.addEventListener("change", renderVendasList);
   vendasElements.filtroStatus?.addEventListener("change", renderVendasList);
   vendasElements.clienteModo?.addEventListener("change", toggleVendaClienteFields);
@@ -2132,6 +2547,7 @@ const loadVendasPanel = async () => {
       cacheVendasElements();
       populateVendasClientes();
       bindVendasEvents();
+      setVendasDataHoje();
       resetVendaForm();
       showVendasList();
     }
@@ -2146,12 +2562,22 @@ const loadVendasPanel = async () => {
 
 const openVendasPanel = async () => {
   await loadVendasPanel();
+  setVendasDataHoje();
   populateVendasClientes();
   showVendasList();
   if (pendingVendaPrefill) {
     resetVendaForm();
     const prefill = pendingVendaPrefill;
     pendingVendaPrefill = null;
+    if (prefill.numero) {
+      const vendaExistente = state.vendas.find((item) => item.numero === prefill.numero);
+      if (vendaExistente) {
+        loadVendaIntoEditor(vendaExistente);
+        showVendasEditor();
+        elements.vendasOverlay?.classList.add("show");
+        return;
+      }
+    }
     vendasElements.origemTipo.value = prefill.origemTipo;
     vendasElements.origemId.value = prefill.origemId;
     vendasElements.clienteModo.value = "cadastrado";
@@ -2181,16 +2607,31 @@ const openVendaFromOs = async (chamadoId) => {
   if (!chamado) {
     return;
   }
-  const pecas = chamado.servico.pecas || [];
-  const servicos = chamado.servico.servicos || [];
-  pendingVendaPrefill = {
-    origemTipo: "OS",
-    origemId: chamado.id,
-    clienteId: chamado.clienteId,
-    descricao: `Venda gerada da O.S. #${chamado.id}`,
-    pecas,
-    servicos,
-  };
+  const statusOrcamento = normalizeAprovacaoOS(chamado.financeiro?.aprovacao);
+  if (statusOrcamento !== "Aprovado") {
+    alert("A O.S. precisa estar com status de orçamento como 'Aprovado' para gerar venda.");
+    return;
+  }
+  const vendaExistente = ensureVendaForApprovedOs(chamado);
+  const { pecas, servicos } = getChamadoItens(chamado);
+  pendingVendaPrefill = vendaExistente
+    ? {
+        numero: vendaExistente.numero,
+        origemTipo: vendaExistente.origemTipo,
+        origemId: vendaExistente.origemId,
+        clienteId: vendaExistente.clienteId,
+        descricao: vendaExistente.descricao,
+        pecas: vendaExistente.pecas || pecas,
+        servicos: vendaExistente.servicos || servicos,
+      }
+    : {
+        origemTipo: "OS",
+        origemId: chamado.id,
+        clienteId: chamado.clienteId,
+        descricao: `Venda gerada da O.S. #${chamado.id}`,
+        pecas,
+        servicos,
+      };
   chamado.servico.statusServico = "Concluida";
   saveChamados();
   render();
@@ -2199,28 +2640,11 @@ const openVendaFromOs = async (chamadoId) => {
   await openVendasPanel();
 };
 
-const openVendaFromOrcamento = async (orcamentoNumero) => {
-  const orcamento = state.orcamentos.find((item) => item.numero === orcamentoNumero);
-  if (!orcamento) {
-    alert("Salve o orçamento antes de gerar a venda.");
-    return;
-  }
-  pendingVendaPrefill = {
-    origemTipo: "Orcamento",
-    origemId: orcamento.numero,
-    clienteId: orcamento.clienteId,
-    descricao: `Venda gerada do Orçamento #${orcamento.numero}`,
-    pecas: orcamento.pecas || [],
-    servicos: orcamento.servicos || [],
-  };
-  orcamento.statusVenda = "Vendido";
-  saveOrcamentos();
-  renderSummary();
-  renderOrcamentosList();
-  closeOrcamentoPanel();
-  await openVendasPanel();
+const openVendaFromOrcamento = async () => {
+  alert("O orçamento avulso foi removido. Gere a venda diretamente pela O.S. aprovada.");
 };
 
+// fin
 const getFilteredFinanceiroVendas = () => {
   const busca = normalize(financeiroElements.busca?.value || "");
   const data = financeiroElements.data?.value || "";
@@ -2249,10 +2673,29 @@ const registerRecebimento = (vendaNumero, valorAdicionar) => {
   if (!venda) {
     return;
   }
+  if (!Array.isArray(venda.historicoRecebimentos)) {
+    venda.historicoRecebimentos = [];
+  }
+  const valorEvento = Number(valorAdicionar || 0);
+  if (valorEvento <= 0) {
+    return;
+  }
+  const recebidoAtual = Number(venda.valorRecebido || 0);
+  if (recebidoAtual >= Number(venda.valorTotal || 0)) {
+    alert("Venda já está quitada.");
+    return;
+  }
   const novoRecebido = Math.min(
     venda.valorTotal || 0,
-    (venda.valorRecebido || 0) + Number(valorAdicionar || 0)
+    recebidoAtual + valorEvento
   );
+  const delta = Number((novoRecebido - recebidoAtual).toFixed(2));
+  if (delta > 0) {
+    venda.historicoRecebimentos.push({
+      data: todayIso(),
+      valor: delta,
+    });
+  }
   venda.valorRecebido = Number(novoRecebido.toFixed(2));
   venda.statusRecebimento = getVendaStatusByValues(venda.valorTotal, venda.valorRecebido);
   saveVendas();
@@ -2301,15 +2744,33 @@ const renderFinanceiroList = () => {
       </div>
       <div class="card__actions">
         <input type="text" data-recebimento-input="${venda.numero}" placeholder="Valor recebido" />
-        <button type="button" class="btn btn--ghost" data-add-recebimento="${venda.numero}">Adicionar recebimento</button>
-        <button type="button" class="btn btn--ghost" data-quitar="${venda.numero}">Marcar recebido</button>
+        <button type="button" class="btn btn--ghost" data-add-recebimento="${venda.numero}">Dar baixa</button>
+        <button type="button" class="btn btn--ghost" data-quitar="${venda.numero}">Quitar</button>
+      </div>
+      <div class="card__actions card__actions--inline">
+        <button type="button" class="btn btn--ghost" data-view-fin-venda="${venda.numero}">Visualizar</button>
+        <button type="button" class="btn btn--ghost" data-print-fin-recibo="${venda.numero}">Recibo</button>
       </div>
     `;
     const input = card.querySelector(`[data-recebimento-input="${venda.numero}"]`);
+    if (emAberto <= 0) {
+      if (input) {
+        input.disabled = true;
+        input.placeholder = "Venda quitada";
+      }
+      const baixaBtn = card.querySelector(`[data-add-recebimento="${venda.numero}"]`);
+      if (baixaBtn) {
+        baixaBtn.disabled = true;
+      }
+    }
     input?.addEventListener("input", handleCurrencyInput);
     card
       .querySelector(`[data-add-recebimento="${venda.numero}"]`)
       ?.addEventListener("click", () => {
+        if (emAberto <= 0) {
+          alert("Venda já está quitada.");
+          return;
+        }
         const value = Number(input?.dataset.valor || "0");
         if (value <= 0) {
           alert("Informe um valor de recebimento.");
@@ -2319,11 +2780,115 @@ const renderFinanceiroList = () => {
       });
     card.querySelector(`[data-quitar="${venda.numero}"]`)?.addEventListener("click", () => {
       const falta = Math.max(0, (venda.valorTotal || 0) - (venda.valorRecebido || 0));
+      if (falta <= 0) {
+        alert("Venda já está quitada.");
+        return;
+      }
       registerRecebimento(venda.numero, falta);
     });
+    card
+      .querySelector(`[data-view-fin-venda="${venda.numero}"]`)
+      ?.addEventListener("click", () => openVendaView(venda));
+    card
+      .querySelector(`[data-print-fin-recibo="${venda.numero}"]`)
+      ?.addEventListener("click", () => printVendaRecibo(venda));
     financeiroElements.lista.appendChild(card);
   });
   financeiroElements.vazio.style.display = vendas.length ? "none" : "block";
+};
+
+const printFinanceiroReport = () => {
+  const vendas = getFilteredFinanceiroVendas();
+  const totalVendido = vendas.reduce((acc, item) => acc + Number(item.valorTotal || 0), 0);
+  const totalRecebido = vendas.reduce((acc, item) => acc + Number(item.valorRecebido || 0), 0);
+  const totalAberto = Math.max(0, totalVendido - totalRecebido);
+  const recebidoHoje = getRecebidoHojeTotal();
+  const printWindow = window.open("", "_blank", "width=1100,height=760");
+  if (!printWindow) {
+    alert("Permita pop-up para imprimir o relatório.");
+    return;
+  }
+  const rows = vendas
+    .map((venda) => {
+      const aberto = Math.max(0, Number(venda.valorTotal || 0) - Number(venda.valorRecebido || 0));
+      return `
+        <tr>
+          <td>#${venda.numero}</td>
+          <td>${getClienteNomeByVenda(venda)}</td>
+          <td>${formatDate(venda.dataVenda) || "-"}</td>
+          <td>${venda.origemTipo || "-"}</td>
+          <td>${formatCurrency(Number(venda.valorTotal || 0).toFixed(2))}</td>
+          <td>${formatCurrency(Number(venda.valorRecebido || 0).toFixed(2))}</td>
+          <td>${formatCurrency(aberto.toFixed(2))}</td>
+          <td>${venda.statusRecebimento || "-"}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  printWindow.document.write(`
+    <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8" />
+        <title>Relatório financeiro</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 24px; color: #0f172a; }
+          .head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; border-bottom:2px solid #0f172a; padding-bottom:12px; }
+          .meta { font-size:12px; color:#334155; display:grid; gap:2px; }
+          .logo { width:72px; height:72px; object-fit:cover; border-radius:12px; border:2px solid #0f172a; }
+          h1 { margin: 0 0 6px; font-size: 20px; }
+          .sum { display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin: 14px 0; }
+          .box { border:1px solid #cbd5e1; border-radius:8px; padding:8px; }
+          .box small { color:#475569; text-transform:uppercase; font-size:10px; letter-spacing:.08em; display:block; }
+          .box strong { font-size:18px; }
+          table { width:100%; border-collapse:collapse; font-size:12px; }
+          th, td { border:1px solid #cbd5e1; padding:6px; text-align:left; }
+          th { background:#f8fafc; }
+        </style>
+      </head>
+      <body>
+        <header class="head">
+          <div>
+            <h1>Relatório financeiro</h1>
+            <div class="meta">
+              <span>${companyInfo.nome || "-"}</span>
+              <span>${companyInfo.documento || "-"}</span>
+              <span>${companyInfo.telefone || "-"}</span>
+              <span>${companyInfo.endereco || "-"}</span>
+              <span>Data: ${new Date().toLocaleDateString("pt-BR")}</span>
+            </div>
+          </div>
+          <img class="logo" src="${companyInfo.logo || "logo.png"}" alt="Logo" />
+        </header>
+
+        <section class="sum">
+          <div class="box"><small>Vendas totais</small><strong>${formatCurrency(totalVendido.toFixed(2))}</strong></div>
+          <div class="box"><small>Recebidas</small><strong>${formatCurrency(totalRecebido.toFixed(2))}</strong></div>
+          <div class="box"><small>Em aberto</small><strong>${formatCurrency(totalAberto.toFixed(2))}</strong></div>
+          <div class="box"><small>Recebido hoje</small><strong>${formatCurrency(recebidoHoje.toFixed(2))}</strong></div>
+        </section>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Venda</th>
+              <th>Cliente</th>
+              <th>Data</th>
+              <th>Origem</th>
+              <th>Vendido</th>
+              <th>Recebido</th>
+              <th>Em aberto</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>${rows || '<tr><td colspan="8">Sem dados.</td></tr>'}</tbody>
+        </table>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
 };
 
 const bindFinanceiroEvents = () => {
@@ -2334,6 +2899,7 @@ const bindFinanceiroEvents = () => {
   financeiroElements.data?.addEventListener("change", renderFinanceiroList);
   financeiroElements.origem?.addEventListener("change", renderFinanceiroList);
   financeiroElements.status?.addEventListener("change", renderFinanceiroList);
+  financeiroElements.imprimir?.addEventListener("click", printFinanceiroReport);
   financeiroBound = true;
 };
 
@@ -2414,6 +2980,7 @@ const saveEmpresa = () => {
   localStorage.setItem(storageCompanyKey, JSON.stringify(companyInfo));
 };
 
+// mig
 const migrateChamados = () => {
   let changed = false;
   state.chamados.forEach((chamado) => {
@@ -2474,6 +3041,32 @@ const normalizeChamado = (chamado) => {
     updated = true;
   }
 
+  if (!chamado.servico) {
+    chamado.servico = {};
+    updated = true;
+  }
+  const hasLegacyItens = Array.isArray(chamado.servico.itens);
+  const hasPecasArray = Array.isArray(chamado.servico.pecas);
+  const hasServicosArray = Array.isArray(chamado.servico.servicos);
+  if (hasLegacyItens || !hasPecasArray || !hasServicosArray) {
+    const { pecas, servicos } = getChamadoItens(chamado);
+    chamado.servico.pecas = pecas;
+    chamado.servico.servicos = servicos;
+    if (hasLegacyItens) {
+      delete chamado.servico.itens;
+    }
+    updated = true;
+  }
+  if (!chamado.servico.totais) {
+    const { pecas, servicos } = getChamadoItens(chamado);
+    chamado.servico.totais = {
+      totalPecas: getRowsTotal(pecas),
+      totalServicos: getRowsTotal(servicos),
+      totalGeral: getRowsTotal(pecas) + getRowsTotal(servicos),
+    };
+    updated = true;
+  }
+
   if (chamado.financeiro) {
     if (chamado.financeiro.Aprovação && !chamado.financeiro.aprovacao) {
       chamado.financeiro.aprovacao = chamado.financeiro.Aprovação;
@@ -2485,17 +3078,27 @@ const normalizeChamado = (chamado) => {
       delete chamado.financeiro.MétodoPagamento;
       updated = true;
     }
-    if (
-      typeof chamado.financeiro.aprovado === "boolean" &&
-      !chamado.financeiro.aprovacao
-    ) {
-      chamado.financeiro.aprovacao = chamado.financeiro.aprovado ? "Sim" : "Não";
+    if (typeof chamado.financeiro.aprovado === "boolean" && !chamado.financeiro.aprovacao) {
+      chamado.financeiro.aprovacao = chamado.financeiro.aprovado ? "Aprovado" : "Reprovado";
       updated = true;
     }
     if (chamado.financeiro.condicaoPagamento && !chamado.financeiro.metodoPagamento) {
       chamado.financeiro.metodoPagamento = chamado.financeiro.condicaoPagamento;
       updated = true;
     }
+    const aprovacaoNormalizada = normalizeAprovacaoOS(chamado.financeiro.aprovacao);
+    if (chamado.financeiro.aprovacao !== aprovacaoNormalizada) {
+      chamado.financeiro.aprovacao = aprovacaoNormalizada;
+      updated = true;
+    }
+    const arquivado = aprovacaoNormalizada === "Reprovado";
+    if (Boolean(chamado.arquivado) !== arquivado) {
+      chamado.arquivado = arquivado;
+      updated = true;
+    }
+  } else {
+    chamado.financeiro = { aprovacao: "Em orçamento" };
+    updated = true;
   }
 
   return updated;
@@ -2507,6 +3110,20 @@ const normalize = (value) =>
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .replace(/[^a-z0-9]/gi, "");
+
+const normalizeAprovacaoOS = (value) => {
+  const normalized = normalize(String(value || ""));
+  if (normalized === "aprovado" || normalized === "sim") {
+    return "Aprovado";
+  }
+  if (normalized === "reprovado" || normalized === "nao") {
+    return "Reprovado";
+  }
+  return "Em orçamento";
+};
+
+const isChamadoArquivado = (chamado) =>
+  Boolean(chamado?.arquivado || normalizeAprovacaoOS(chamado?.financeiro?.aprovacao) === "Reprovado");
 
 const formatCpf = (value) => {
   const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -2537,6 +3154,14 @@ const formatCep = (value) => {
   const digits = value.replace(/\D/g, "").slice(0, 8);
   return digits.replace(/(\d{5})(\d{0,3})/, "$1-$2");
 };
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Falha ao ler o arquivo."));
+    reader.readAsDataURL(file);
+  });
 
 const setModalOpen = (open) => {
   elements.modal.classList.toggle("show", open);
@@ -2597,9 +3222,8 @@ const buildDocumentoHTML = (chamado, cliente, tipo) => {
       : tipo === "pedido"
       ? "Pedido"
       : "Orcamento";
-  const metodo = chamado.financeiro.metodoPagamento || "Não informado";
-  const valor = chamado.financeiro.valor || "";
-  const parcelas = chamado.financeiro.parcelas || "";
+  const statusOrcamento = normalizeAprovacaoOS(chamado.financeiro?.aprovacao);
+  const vendaDaOs = getVendaByOsId(chamado.id);
 
   return `
     <div class="doc-header">
@@ -2634,11 +3258,11 @@ const buildDocumentoHTML = (chamado, cliente, tipo) => {
     </div>
 
     <div class="doc-section">
-      <strong>Financeiro</strong>
-      <span>Aprovação: ${chamado.financeiro.aprovacao || "Não informado"}</span>
-      <span>Método: ${metodo}</span>
-      <span>Valor: ${valor ? formatCurrency(valor) : "Não informado"}</span>
-      ${parcelas ? `<span>Parcelas: ${parcelas}x</span>` : ""}
+      <strong>Status comercial</strong>
+      <span>Status do orçamento: ${statusOrcamento}</span>
+      <span>Tipo de pagamento: ${chamado.financeiro?.metodoPagamento || "Nao informado"}</span>
+      <span>Arquivada: ${isChamadoArquivado(chamado) ? "Sim" : "Não"}</span>
+      <span>Venda vinculada: ${vendaDaOs ? `#${vendaDaOs.numero}` : "Não gerada"}</span>
     </div>
     ${
       tipo === "pedido"
@@ -2672,18 +3296,14 @@ const buildClienteHTML = (cliente) => `
 `;
 
 const updateFinanceiroFields = () => {
-  const aprovado = chamadoFields.aprovacao?.value === "Sim";
   if (elements.metodoPagamentoField) {
-    elements.metodoPagamentoField.style.display = aprovado ? "flex" : "none";
+    elements.metodoPagamentoField.style.display = "none";
   }
   if (elements.valorPagamentoField) {
-    elements.valorPagamentoField.style.display = aprovado ? "flex" : "none";
+    elements.valorPagamentoField.style.display = "none";
   }
   if (elements.parcelasPagamentoField) {
-    const metodo = chamadoFields.metodoPagamento?.value || "";
-    const precisaParcelas = ["Cartao", "Crediario", "Boleto"].includes(metodo);
-    elements.parcelasPagamentoField.style.display =
-      aprovado && precisaParcelas ? "flex" : "none";
+    elements.parcelasPagamentoField.style.display = "none";
   }
 };
 
@@ -2750,7 +3370,10 @@ const resetChamadoForm = () => {
   chamadoFields.statusServico.value = "Aberto";
   chamadoFields.dataEntrada.valueAsDate = new Date();
   if (chamadoFields.aprovacao) {
-    chamadoFields.aprovacao.value = "Em andamento";
+    chamadoFields.aprovacao.value = "Em orçamento";
+  }
+  if (chamadoFields.metodoPagamento) {
+    chamadoFields.metodoPagamento.value = "Nao informado";
   }
   updateFinanceiroFields();
   resetOsTables();
@@ -2758,10 +3381,50 @@ const resetChamadoForm = () => {
 };
 
 const resetClienteForm = () => {
+  state.editClienteId = null;
+  elements.modalClienteTitulo.textContent = "Cadastro de cliente";
   elements.formCliente.reset();
   clienteFields.tipoCadastro.value = "PF";
   updateCadastroFields();
   setCepHint("Digite o CEP para buscar o endereço ou preencha manualmente.");
+};
+
+const fillClienteForm = (cliente) => {
+  if (!cliente) {
+    return;
+  }
+  clienteFields.tipoCadastro.value = cliente.tipoCadastro;
+  updateCadastroFields();
+
+  clienteFields.nomeCompleto.value = cliente.cliente?.nomeCompleto || "";
+  clienteFields.cpf.value = cliente.cliente?.cpf || "";
+  clienteFields.razaoSocial.value = cliente.cliente?.razaoSocial || "";
+  clienteFields.cnpj.value = cliente.cliente?.cnpj || "";
+  clienteFields.contatoResponsavel.value = cliente.cliente?.contatoResponsavel || "";
+
+  clienteFields.email.value = cliente.contato?.email || "";
+  clienteFields.telefone.value = cliente.contato?.telefone || "";
+  clienteFields.whatsapp.value = cliente.contato?.whatsapp || "";
+
+  clienteFields.rua.value = cliente.endereco?.rua || "";
+  clienteFields.numero.value = cliente.endereco?.numero || "";
+  clienteFields.complemento.value = cliente.endereco?.complemento || "";
+  clienteFields.bairro.value = cliente.endereco?.bairro || "";
+  clienteFields.cidade.value = cliente.endereco?.cidade || "";
+  clienteFields.uf.value = cliente.endereco?.uf || "";
+  clienteFields.cep.value = cliente.endereco?.cep || "";
+  setCepHint("Revise os dados e salve as alterações.");
+};
+
+const openClienteEdit = (clienteId) => {
+  const cliente = getClienteById(clienteId);
+  if (!cliente) {
+    return;
+  }
+  state.editClienteId = cliente.id;
+  elements.modalClienteTitulo.textContent = "Editar cliente";
+  fillClienteForm(cliente);
+  setClienteModalOpen(true);
 };
 
 const validateChamadoForm = () => {
@@ -2791,25 +3454,6 @@ const validateChamadoForm = () => {
   if (linhasInvalidas) {
     alert("Preencha Descrição, UN, Qtde e Preço un em todos os itens da O.S.");
     return false;
-  }
-
-  if (chamadoFields.aprovacao.value === "Sim") {
-    if (!chamadoFields.metodoPagamento.value) {
-      alert("Selecione o Método de pagamento.");
-      return false;
-    }
-    if (!chamadoFields.valorPagamento.value) {
-      alert("Informe o valor do pagamento.");
-      return false;
-    }
-    const metodo = chamadoFields.metodoPagamento.value;
-    if (
-      (metodo === "Cartao" || metodo === "Crediario" || metodo === "Boleto") &&
-      !chamadoFields.parcelasPagamento.value
-    ) {
-      alert("Informe a quantidade de parcelas.");
-      return false;
-    }
   }
 
   return true;
@@ -2843,10 +3487,10 @@ const generateId = () => {
   return code;
 };
 
-const buildClienteFromForm = () => {
+const buildClienteFromForm = (currentCliente = null) => {
   const tipo = clienteFields.tipoCadastro.value;
   return {
-    id: generateId(),
+    id: currentCliente?.id || generateId(),
     tipoCadastro: tipo,
     cliente:
       tipo === "PF"
@@ -2873,7 +3517,7 @@ const buildClienteFromForm = () => {
       uf: clienteFields.uf.value.trim().toUpperCase(),
       cep: clienteFields.cep.value.trim(),
     },
-    createdAt: new Date().toISOString(),
+    createdAt: currentCliente?.createdAt || new Date().toISOString(),
   };
 };
 
@@ -2895,20 +3539,12 @@ const buildChamadoFromForm = () => ({
     totais: getOsTotals(),
   },
   financeiro: {
-    aprovacao: chamadoFields.aprovacao.value,
-    metodoPagamento:
-      chamadoFields.aprovacao.value === "Sim"
-        ? chamadoFields.metodoPagamento.value
-        : "",
-    valor:
-      chamadoFields.aprovacao.value === "Sim"
-        ? (chamadoFields.valorPagamento.dataset.valor || "")
-        : "",
-    parcelas:
-      chamadoFields.aprovacao.value === "Sim"
-        ? chamadoFields.parcelasPagamento.value
-        : "",
+    aprovacao: normalizeAprovacaoOS(chamadoFields.aprovacao.value),
+    metodoPagamento: chamadoFields.metodoPagamento?.value || "Nao informado",
+    valor: "",
+    parcelas: "",
   },
+  arquivado: normalizeAprovacaoOS(chamadoFields.aprovacao.value) === "Reprovado",
   createdAt: state.editId
     ? getChamadoById(state.editId)?.createdAt ?? new Date().toISOString()
     : new Date().toISOString(),
@@ -2916,16 +3552,107 @@ const buildChamadoFromForm = () => ({
 
 const getChamadoById = (id) => state.chamados.find((item) => item.id === id);
 const getClienteById = (id) => state.clientes.find((item) => item.id === id);
+const getVendaByOsId = (osId) =>
+  state.vendas.find((item) => item.origemTipo === "OS" && item.origemId === osId);
+
+const buildVendaFromOs = (chamado, previousVenda = null) => {
+  const { pecas, servicos } = getChamadoItens(chamado);
+  const itens = [...pecas, ...servicos];
+  const valorBruto = Number(getRowsTotal(itens).toFixed(2));
+  const valorRecebido = Number(previousVenda?.valorRecebido || 0);
+  const descontoValor = Number(previousVenda?.descontoValor || 0);
+  const outrosValores = Number(previousVenda?.outrosValores || 0);
+  const valorTotal = Number(Math.max(0, valorBruto - descontoValor + outrosValores).toFixed(2));
+  return {
+    numero: previousVenda?.numero || generateVendaNumero(),
+    dataVenda: previousVenda?.dataVenda || new Date().toISOString().slice(0, 10),
+    origemTipo: "OS",
+    origemId: chamado.id,
+    clienteModo: "cadastrado",
+    clienteId: chamado.clienteId,
+    clienteNomeManual: "",
+    descricao: `Venda gerada da O.S. #${chamado.id}`,
+    itens,
+    pecas,
+    servicos,
+    valorBruto,
+    descontoTipo: previousVenda?.descontoTipo || "Nenhum",
+    descontoValor,
+    descontoPercentual: Number(previousVenda?.descontoPercentual || 0),
+    descontoEntrada: previousVenda?.descontoEntrada || "",
+    outrosValores,
+    valorTotal,
+    valorRecebido,
+    metodoPagamento:
+      previousVenda?.metodoPagamento ||
+      chamado.financeiro?.metodoPagamento ||
+      "Nao informado",
+    historicoRecebimentos: Array.isArray(previousVenda?.historicoRecebimentos)
+      ? [...previousVenda.historicoRecebimentos]
+      : [],
+    statusRecebimento: getVendaStatusByValues(
+      valorTotal,
+      valorRecebido,
+      previousVenda?.statusRecebimento || "Pendente"
+    ),
+    createdAt: previousVenda?.createdAt || new Date().toISOString(),
+  };
+};
+
+const ensureVendaForApprovedOs = (chamado) => {
+  if (normalizeAprovacaoOS(chamado.financeiro?.aprovacao) !== "Aprovado") {
+    return null;
+  }
+  const vendaExistente = getVendaByOsId(chamado.id);
+  if (vendaExistente) {
+    const vendaAtualizada = buildVendaFromOs(chamado, vendaExistente);
+    state.vendas = state.vendas.map((item) =>
+      item.numero === vendaExistente.numero ? vendaAtualizada : item
+    );
+    saveVendas();
+    return vendaAtualizada;
+  }
+  const venda = buildVendaFromOs(chamado);
+  state.vendas.unshift(venda);
+  saveVendas();
+  return venda;
+};
+
+const archiveOsIfRejected = (chamado) => {
+  chamado.arquivado = normalizeAprovacaoOS(chamado.financeiro?.aprovacao) === "Reprovado";
+};
+
+const removePendingVendaFromOsIfNeeded = (chamado) => {
+  const statusOrcamento = normalizeAprovacaoOS(chamado.financeiro?.aprovacao);
+  if (statusOrcamento === "Aprovado") {
+    return;
+  }
+  const venda = getVendaByOsId(chamado.id);
+  if (!venda) {
+    return;
+  }
+  const hasReceived = Number(venda.valorRecebido || 0) > 0;
+  if (hasReceived || venda.statusRecebimento === "Recebido") {
+    return;
+  }
+  state.vendas = state.vendas.filter((item) => item.numero !== venda.numero);
+  saveVendas();
+};
 
 const upsertChamado = (chamado) => {
+  archiveOsIfRejected(chamado);
+  removePendingVendaFromOsIfNeeded(chamado);
   const index = state.chamados.findIndex((item) => item.id === chamado.id);
   if (index >= 0) {
     state.chamados[index] = chamado;
   } else {
     state.chamados.unshift(chamado);
   }
+  ensureVendaForApprovedOs(chamado);
   saveChamados();
   render();
+  renderVendasList();
+  renderFinanceiroList();
 };
 
 const deleteChamado = (id) => {
@@ -2934,37 +3661,190 @@ const deleteChamado = (id) => {
   render();
 };
 
+const todayIso = () => {
+  const d = new Date();
+  return dateToIsoLocal(d);
+};
+
+const dateToIsoLocal = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const formatDateShort = (isoDate) => {
+  if (!isoDate) {
+    return "-";
+  }
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString("pt-BR");
+};
+
+const normalizeDashPeriod = (start, end) => {
+  if (start && end && start <= end) {
+    return { start, end };
+  }
+  if (start && end && start > end) {
+    return { start: end, end: start };
+  }
+  return { start: start || "", end: end || "" };
+};
+
+const getDashPeriod = () =>
+  normalizeDashPeriod(elements.dashDataInicio?.value || "", elements.dashDataFim?.value || "");
+
+const updateDashPeriodInfo = () => {
+  if (!elements.dashPeriodoInfo) {
+    return;
+  }
+  const { start, end } = getDashPeriod();
+  elements.dashPeriodoInfo.textContent = `Período: ${
+    start ? formatDateShort(start) : "início livre"
+  } a ${end ? formatDateShort(end) : "fim livre"} · Hoje: ${formatDateShort(todayIso())}`;
+};
+
+const setDashPeriod = (start, end, rerender = true) => {
+  const period = normalizeDashPeriod(start, end);
+  if (elements.dashDataInicio) {
+    elements.dashDataInicio.value = period.start;
+  }
+  if (elements.dashDataFim) {
+    elements.dashDataFim.value = period.end;
+  }
+  updateDashPeriodInfo();
+  if (rerender) {
+    renderSummary();
+  }
+};
+
+const dateInPeriod = (isoDate, period) => {
+  if (!isoDate) {
+    return false;
+  }
+  if (period.start && isoDate < period.start) {
+    return false;
+  }
+  if (period.end && isoDate > period.end) {
+    return false;
+  }
+  return true;
+};
+
+const getChamadoDate = (chamado) => {
+  const date = chamado?.servico?.dataEntrada || "";
+  if (date) {
+    return date;
+  }
+  return chamado?.createdAt ? String(chamado.createdAt).slice(0, 10) : "";
+};
+
+const getVendaDate = (venda) => {
+  const date = venda?.dataVenda || "";
+  if (date) {
+    return date;
+  }
+  return venda?.createdAt ? String(venda.createdAt).slice(0, 10) : "";
+};
+
+const migrateVendasRecebimentos = () => {
+  let changed = false;
+  state.vendas.forEach((venda) => {
+    if (!Array.isArray(venda.historicoRecebimentos)) {
+      venda.historicoRecebimentos = [];
+      if (Number(venda.valorRecebido || 0) > 0) {
+        venda.historicoRecebimentos.push({
+          data: venda.dataVenda || todayIso(),
+          valor: Number(Number(venda.valorRecebido || 0).toFixed(2)),
+        });
+      }
+      changed = true;
+    }
+  });
+  if (changed) {
+    saveVendas();
+  }
+};
+
+const getRecebidoHojeTotal = () =>
+  state.vendas.reduce((acc, venda) => {
+    const hist = Array.isArray(venda.historicoRecebimentos)
+      ? venda.historicoRecebimentos
+      : [];
+    const sum = hist
+      .filter((item) => item.data === todayIso())
+      .reduce((sub, item) => sub + Number(item.valor || 0), 0);
+    return acc + sum;
+  }, 0);
+
+const getRecebidoNoPeriodoTotal = (vendas, period) =>
+  vendas.reduce((acc, venda) => {
+    const hist = Array.isArray(venda.historicoRecebimentos)
+      ? venda.historicoRecebimentos
+      : [];
+    const sum = hist
+      .filter((item) => dateInPeriod(item.data, period))
+      .reduce((sub, item) => sub + Number(item.valor || 0), 0);
+    return acc + sum;
+  }, 0);
+
 const renderSummary = () => {
-  const totalValue = state.chamados.length.toString();
-  const totalAbertosValue = state.chamados.filter(
+  const period = getDashPeriod();
+  const chamadosAtivos = state.chamados.filter((item) => !isChamadoArquivado(item));
+  const chamadosPeriodo = chamadosAtivos.filter((item) => dateInPeriod(getChamadoDate(item), period));
+  const totalValue = chamadosPeriodo.length;
+  const totalAbertosValue = chamadosPeriodo.filter(
     (item) => item.servico.statusServico === "Aberto"
-  ).length.toString();
-  const totalAtendimentoValue = state.chamados.filter(
-    (item) => item.servico.statusServico === "Em atendimento"
-  ).length.toString();
-  const totalFechadosValue = state.chamados.filter(
+  ).length;
+  const totalFechadosValue = chamadosPeriodo.filter(
     (item) =>
       item.servico.statusServico === "Fechado" || item.servico.statusServico === "Concluida"
-  ).length.toString();
-  const totalOrcamentosValue = state.orcamentos.length.toString();
-  const totalVendasValue = state.vendas.length.toString();
+  ).length;
+  const totalEmOrcamentoValue = chamadosPeriodo.filter(
+    (item) => normalizeAprovacaoOS(item.financeiro?.aprovacao) === "Em orçamento"
+  ).length;
+  const vendasPeriodo = state.vendas.filter((item) => dateInPeriod(getVendaDate(item), period));
+  const totalVendasQtdValue = vendasPeriodo.length;
+  const totalVendasDiaValue = state.vendas.filter((item) => getVendaDate(item) === todayIso()).length;
+  const finTotalVendido = vendasPeriodo.reduce((acc, item) => acc + Number(item.valorTotal || 0), 0);
+  const finTotalRecebido = getRecebidoNoPeriodoTotal(vendasPeriodo, period);
+  const finTotalAberto = vendasPeriodo.reduce(
+    (acc, item) => acc + Math.max(0, Number(item.valorTotal || 0) - Number(item.valorRecebido || 0)),
+    0
+  );
+  const finRecebidoHoje = getRecebidoHojeTotal();
 
   if (elements.total) {
-    elements.total.textContent = totalValue;
-    elements.totalAbertos.textContent = totalAbertosValue;
-    elements.totalAtendimento.textContent = totalAtendimentoValue;
-    elements.totalFechados.textContent = totalFechadosValue;
+    elements.total.textContent = String(totalValue);
+    elements.totalAbertos.textContent = String(totalAbertosValue);
+    elements.totalAtendimento.textContent = String(
+      chamadosPeriodo.filter((item) => item.servico.statusServico === "Em atendimento").length
+    );
+    elements.totalFechados.textContent = String(totalFechadosValue);
   }
   if (elements.totalDash) {
-    elements.totalDash.textContent = totalValue;
-    elements.totalAbertosDash.textContent = totalAbertosValue;
-    elements.totalAtendimentoDash.textContent = totalAtendimentoValue;
-    elements.totalFechadosDash.textContent = totalFechadosValue;
-    if (elements.totalOrcamentosDash) {
-      elements.totalOrcamentosDash.textContent = totalOrcamentosValue;
+    elements.totalDash.textContent = String(totalValue);
+    elements.totalAbertosDash.textContent = String(totalAbertosValue);
+    elements.totalFechadosDash.textContent = String(totalFechadosValue);
+    if (elements.totalOsOrcamentoDash) {
+      elements.totalOsOrcamentoDash.textContent = String(totalEmOrcamentoValue);
     }
-    if (elements.totalVendasDash) {
-      elements.totalVendasDash.textContent = totalVendasValue;
+    if (elements.totalVendasQtdDash) {
+      elements.totalVendasQtdDash.textContent = String(totalVendasQtdValue);
+    }
+    if (elements.totalVendasDiaDash) {
+      elements.totalVendasDiaDash.textContent = String(totalVendasDiaValue);
+    }
+    if (elements.finTotalVendidoDash) {
+      elements.finTotalVendidoDash.textContent = formatCurrency(finTotalVendido.toFixed(2));
+    }
+    if (elements.finTotalRecebidoDash) {
+      elements.finTotalRecebidoDash.textContent = formatCurrency(finTotalRecebido.toFixed(2));
+    }
+    if (elements.finTotalAbertoDash) {
+      elements.finTotalAbertoDash.textContent = formatCurrency(finTotalAberto.toFixed(2));
+    }
+    if (elements.finRecebidoHojeDash) {
+      elements.finRecebidoHojeDash.textContent = formatCurrency(finRecebidoHoje.toFixed(2));
     }
   }
 };
@@ -2977,10 +3857,18 @@ const getFilteredChamados = () => {
 
   return state.chamados
     .filter((item) => {
+      const arquivado = isChamadoArquivado(item);
+      if (status === "__arquivadas") {
+        if (!arquivado) {
+          return false;
+        }
+      } else if (arquivado) {
+        return false;
+      }
       if (prioridade && item.servico.prioridade !== prioridade) {
         return false;
       }
-      if (status && item.servico.statusServico !== status) {
+      if (status && status !== "__arquivadas" && item.servico.statusServico !== status) {
         return false;
       }
       if (dataEntrada && item.servico.dataEntrada !== dataEntrada) {
@@ -3049,6 +3937,8 @@ const createCard = (chamado) => {
   const prioridadeClass = priorityClass[chamado.servico.prioridade] || "";
   const statusClassName = statusClass[chamado.servico.statusServico] || "";
   const cliente = getClienteById(chamado.clienteId);
+  const statusOrcamento = normalizeAprovacaoOS(chamado.financeiro?.aprovacao);
+  const arquivado = isChamadoArquivado(chamado);
   const clienteNome = cliente
     ? cliente.tipoCadastro === "PF"
       ? cliente.cliente.nomeCompleto
@@ -3061,8 +3951,10 @@ const createCard = (chamado) => {
         <h3 class="card__title">O.S. #${chamado.id}</h3>
       </div>
       <div class="card__tags">
+        <span class="tag tag--media">${statusOrcamento}</span>
         <span class="tag ${prioridadeClass}">${chamado.servico.prioridade}</span>
         <span class="status ${statusClassName}">${chamado.servico.statusServico}</span>
+        ${arquivado ? '<span class="status status--Fechado">Arquivada</span>' : ""}
       </div>
     </div>
     <div class="card__row">
@@ -3102,8 +3994,7 @@ const render = () => {
 const buildChamadoViewHTML = (chamado, cliente) => `
   ${
     (() => {
-      const pecas = chamado.servico.pecas || [];
-      const servicos = chamado.servico.servicos || [];
+      const { pecas, servicos } = getChamadoItens(chamado);
       const totalPecas = getRowsTotal(pecas);
       const totalServicos = getRowsTotal(servicos);
       const totalGeral = totalPecas + totalServicos;
@@ -3196,11 +4087,18 @@ const buildChamadoViewHTML = (chamado, cliente) => `
   </div>
 
   <div class="doc-section">
-    <strong>Financeiro</strong>
-    <span>Aprovação: ${chamado.financeiro.aprovacao || "Não informado"}</span>
-    <span>Método: ${chamado.financeiro.metodoPagamento || "Não informado"}</span>
-    <span>Valor: ${chamado.financeiro.valor ? formatCurrency(chamado.financeiro.valor) : "Não informado"}</span>
-    ${chamado.financeiro.parcelas ? `<span>Parcelas: ${chamado.financeiro.parcelas}x</span>` : ""}
+    <strong>Status comercial</strong>
+    <span>Status do orçamento: ${normalizeAprovacaoOS(chamado.financeiro?.aprovacao)}</span>
+    <span>Tipo de pagamento: ${chamado.financeiro?.metodoPagamento || "Nao informado"}</span>
+    <span>Arquivada: ${isChamadoArquivado(chamado) ? "Sim" : "Não"}</span>
+    ${
+      (() => {
+        const vendaDaOs = getVendaByOsId(chamado.id);
+        return vendaDaOs
+          ? `<span>Venda vinculada: #${vendaDaOs.numero}</span>`
+          : "<span>Venda vinculada: Não gerada</span>";
+      })()
+    }
   </div>
 `;
 
@@ -3216,13 +4114,30 @@ const openView = (id) => {
   closeFinanceiroPanel();
   const cliente = getClienteById(chamado.clienteId);
   setPagamentoActionsVisible(false);
+  const statusOrcamento = normalizeAprovacaoOS(chamado.financeiro?.aprovacao);
+  const arquivado = isChamadoArquivado(chamado);
+  const vendaDaOs = getVendaByOsId(chamado.id);
+  const showAprovar = !arquivado && statusOrcamento === "Em orçamento";
+  const showVenda = !arquivado && statusOrcamento === "Aprovado";
+  const showReativar = arquivado;
   elements.docConteudo.innerHTML = `
     ${buildChamadoViewHTML(chamado, cliente)}
     <div class="doc-section">
       <strong>Ações</strong>
       <div class="card__actions">
-        <button class="btn btn--ghost" id="viewOrcamento">Orçamento</button>
-        <button class="btn btn--ghost" id="viewVenda">Venda</button>
+        ${
+          showAprovar
+            ? '<button class="btn btn--ghost" id="viewAprovarGerar">Aprovar e gerar venda</button>'
+            : ""
+        }
+        ${
+          showVenda
+            ? `<button class="btn btn--ghost" id="viewVenda">${
+                vendaDaOs ? "Abrir venda" : "Gerar venda"
+              }</button>`
+            : ""
+        }
+        ${showReativar ? '<button class="btn btn--ghost" id="viewReativar">Reativar O.S.</button>' : ""}
         <button class="btn btn--ghost" id="viewEditar">Editar</button>
         <button class="btn btn--ghost" id="viewExcluir">Excluir</button>
       </div>
@@ -3239,13 +4154,28 @@ const openView = (id) => {
     setPagamentoModalOpen(false);
     openEdit(id);
   });
-  document.getElementById("viewOrcamento")?.addEventListener("click", () => {
-    setPagamentoModalOpen(false);
-    openOrcamentoFromOs(id);
-  });
   document.getElementById("viewVenda")?.addEventListener("click", () => {
     setPagamentoModalOpen(false);
     openVendaFromOs(id);
+  });
+  document.getElementById("viewAprovarGerar")?.addEventListener("click", () => {
+    chamado.financeiro.aprovacao = "Aprovado";
+    chamado.arquivado = false;
+    ensureVendaForApprovedOs(chamado);
+    saveChamados();
+    saveVendas();
+    render();
+    renderVendasList();
+    renderFinanceiroList();
+    setPagamentoModalOpen(false);
+    openVendasPanel();
+  });
+  document.getElementById("viewReativar")?.addEventListener("click", () => {
+    chamado.financeiro.aprovacao = "Em orçamento";
+    chamado.arquivado = false;
+    saveChamados();
+    render();
+    setPagamentoModalOpen(false);
   });
   document.getElementById("viewExcluir")?.addEventListener("click", () => {
     const confirmBox = document.getElementById("confirmExcluir");
@@ -3352,18 +4282,21 @@ const openEdit = (id) => {
   chamadoFields.descricao.value = chamado.servico.descricao;
   loadOsTablesFromChamado(chamado);
 
-  chamadoFields.aprovacao.value = chamado.financeiro.aprovacao || "Em andamento";
-  chamadoFields.metodoPagamento.value = chamado.financeiro.metodoPagamento || "Dinheiro";
-  chamadoFields.valorPagamento.value = chamado.financeiro.valor
-    ? formatCurrency(chamado.financeiro.valor)
-    : "";
-  chamadoFields.valorPagamento.dataset.valor = chamado.financeiro.valor || "";
-  chamadoFields.parcelasPagamento.value = chamado.financeiro.parcelas || "";
+  chamadoFields.aprovacao.value = normalizeAprovacaoOS(chamado.financeiro?.aprovacao);
+  if (chamadoFields.metodoPagamento) {
+    chamadoFields.metodoPagamento.value =
+      chamado.financeiro?.metodoPagamento || "Nao informado";
+  }
+  if (chamadoFields.valorPagamento) {
+    chamadoFields.valorPagamento.value = "";
+    chamadoFields.valorPagamento.dataset.valor = "";
+  }
+  if (chamadoFields.parcelasPagamento) {
+    chamadoFields.parcelasPagamento.value = "";
+  }
   updateFinanceiroFields();
 
-  setFormDisabled(
-    chamado.servico.statusServico === "Fechado" || chamado.servico.statusServico === "Concluida"
-  );
+  setFormDisabled(false);
   setModalOpen(true);
 };
 
@@ -3382,23 +4315,60 @@ const handleClienteSubmit = (event) => {
   if (!validateClienteForm()) {
     return;
   }
-  const cliente = buildClienteFromForm();
-  state.clientes.unshift(cliente);
+  const currentCliente = state.editClienteId ? getClienteById(state.editClienteId) : null;
+  if (state.editClienteId && !currentCliente) {
+    alert("Cliente não encontrado para edição.");
+    resetClienteForm();
+    return;
+  }
+  const cliente = buildClienteFromForm(currentCliente);
+  if (currentCliente) {
+    state.clientes = state.clientes.map((item) => (item.id === cliente.id ? cliente : item));
+  } else {
+    state.clientes.unshift(cliente);
+  }
   saveClientes();
   renderClientesSelect(cliente.id);
-  populateOrcamentoClientes();
   populateVendasClientes();
   renderClientesPanel();
+  resetClienteForm();
   setClienteModalOpen(false);
 };
 
+const bindDashPeriodEvents = () => {
+  elements.dashDataInicio?.addEventListener("change", () => {
+    setDashPeriod(elements.dashDataInicio?.value || "", elements.dashDataFim?.value || "");
+  });
+  elements.dashDataFim?.addEventListener("change", () => {
+    setDashPeriod(elements.dashDataInicio?.value || "", elements.dashDataFim?.value || "");
+  });
+  document.querySelectorAll("[data-dash-clear]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = btn.getAttribute("data-dash-clear");
+      if (!target) {
+        return;
+      }
+      const input = document.getElementById(target);
+      if (input) {
+        input.value = "";
+      }
+      setDashPeriod(elements.dashDataInicio?.value || "", elements.dashDataFim?.value || "");
+    });
+  });
+};
+
+// init
 const init = () => {
+  // leg
+  localStorage.removeItem(storageBudgetKey);
   loadChamados();
   loadClientes();
-  loadOrcamentos();
   loadVendas();
+  migrateVendasRecebimentos();
   loadEmpresa();
   migrateChamados();
+  setDashPeriod(todayIso(), "", false);
+  bindDashPeriodEvents();
   renderClientesSelect();
   render();
   resetChamadoForm();
@@ -3408,42 +4378,29 @@ const init = () => {
     closeClientesPanel();
     closeVendasPanel();
     closeFinanceiroPanel();
-    closeOrcamentoPanel();
     openChamadosPanel();
   });
   elements.fecharChamados?.addEventListener("click", closeChamadosPanel);
   elements.fecharClientes?.addEventListener("click", closeClientesPanel);
-  elements.fecharOrcamento?.addEventListener("click", closeOrcamentoPanel);
   elements.fecharVendas?.addEventListener("click", closeVendasPanel);
   elements.fecharFinanceiro?.addEventListener("click", closeFinanceiroPanel);
 
   elements.menuCadastroCliente.addEventListener("click", () => {
     closeChamadosPanel();
     closeClientesPanel();
-    closeOrcamentoPanel();
     closeVendasPanel();
     closeFinanceiroPanel();
     openClientesPanel();
   });
 
-  elements.menuOrcamento.addEventListener("click", () => {
-    closeChamadosPanel();
-    closeClientesPanel();
-    closeVendasPanel();
-    closeFinanceiroPanel();
-    openOrcamentoPanel();
-  });
-
   elements.menuVendas?.addEventListener("click", () => {
     closeChamadosPanel();
     closeClientesPanel();
-    closeOrcamentoPanel();
     closeFinanceiroPanel();
     openVendasPanel();
   });
 
   elements.menuPedido?.addEventListener("click", () => {
-    closeOrcamentoPanel();
     openFinanceiroMenu("pedido");
   });
 
@@ -3451,13 +4408,11 @@ const init = () => {
     closeVendasPanel();
     closeChamadosPanel();
     closeClientesPanel();
-    closeOrcamentoPanel();
     openFinanceiroPanel();
   });
   elements.menuEmpresa.addEventListener("click", () => {
     closeChamadosPanel();
     closeClientesPanel();
-    closeOrcamentoPanel();
     closeVendasPanel();
     closeFinanceiroPanel();
     elements.empresaNome.value = companyInfo.nome;
@@ -3465,6 +4420,12 @@ const init = () => {
     elements.empresaEndereco.value = companyInfo.endereco;
     elements.empresaTelefone.value = companyInfo.telefone;
     elements.empresaLogo.value = companyInfo.logo || "logo.png";
+    if (elements.empresaAssinatura) {
+      elements.empresaAssinatura.value = companyInfo.assinatura || "";
+    }
+    if (elements.empresaAssinaturaFile) {
+      elements.empresaAssinaturaFile.value = "";
+    }
     elements.empresaTitulo.value = companyInfo.titulo || "Central de Suporte";
     elements.empresaSubtitulo.value =
       companyInfo.subtitulo || "Gestão completa de chamados com cadastro PF/PJ.";
@@ -3496,10 +4457,17 @@ const init = () => {
     setPagamentoModalOpen(true);
   });
 
-  elements.fecharModalCliente.addEventListener("click", () => setClienteModalOpen(false));
-  elements.cancelarCliente.addEventListener("click", () => setClienteModalOpen(false));
+  elements.fecharModalCliente.addEventListener("click", () => {
+    resetClienteForm();
+    setClienteModalOpen(false);
+  });
+  elements.cancelarCliente.addEventListener("click", () => {
+    resetClienteForm();
+    setClienteModalOpen(false);
+  });
   elements.modalCliente.addEventListener("click", (event) => {
     if (event.target === elements.modalCliente) {
+      resetClienteForm();
       setClienteModalOpen(false);
     }
   });
@@ -3536,14 +4504,29 @@ const init = () => {
       setEmpresaModalOpen(false);
     }
   });
-  elements.formEmpresa.addEventListener("submit", (event) => {
+  elements.formEmpresa.addEventListener("submit", async (event) => {
     event.preventDefault();
+    let assinatura = elements.empresaAssinatura?.value.trim() || "";
+    const assinaturaFile = elements.empresaAssinaturaFile?.files?.[0];
+    if (assinaturaFile) {
+      if (!assinaturaFile.type.includes("png")) {
+        alert("Selecione um arquivo PNG para assinatura.");
+        return;
+      }
+      try {
+        assinatura = await readFileAsDataUrl(assinaturaFile);
+      } catch (error) {
+        alert("Nao foi possivel ler o arquivo da assinatura.");
+        return;
+      }
+    }
     companyInfo = {
       nome: elements.empresaNome.value.trim() || "Helpdesk Company",
       documento: elements.empresaDocumento.value.trim(),
       endereco: elements.empresaEndereco.value.trim(),
       telefone: elements.empresaTelefone.value.trim(),
       logo: elements.empresaLogo.value.trim() || "logo.png",
+      assinatura,
       titulo: elements.empresaTitulo.value.trim() || "Central de Suporte",
       subtitulo:
         elements.empresaSubtitulo.value.trim() ||

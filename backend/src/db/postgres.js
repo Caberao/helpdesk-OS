@@ -19,13 +19,6 @@ const createPostgresAdapter = (config) => {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
-      CREATE TABLE IF NOT EXISTS orcamentos (
-        id TEXT PRIMARY KEY,
-        data JSONB NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      );
-
       CREATE TABLE IF NOT EXISTS vendas (
         id TEXT PRIMARY KEY,
         data JSONB NOT NULL,

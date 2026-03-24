@@ -15,7 +15,17 @@
       </div>
       <div class="control">
         <label for="vendasFiltroData">Data</label>
-        <input id="vendasFiltroData" type="date" />
+        <div class="control__field">
+          <input id="vendasFiltroData" type="date" />
+          <button
+            type="button"
+            class="clear-btn"
+            data-vendas-clear="vendasFiltroData"
+            aria-label="Limpar data de vendas"
+          >
+            ×
+          </button>
+        </div>
       </div>
       <div class="control">
         <label for="vendasFiltroOrigem">Origem</label>
@@ -23,7 +33,6 @@
           <option value="">Todas</option>
           <option value="Direta">Direta</option>
           <option value="OS">O.S.</option>
-          <option value="Orcamento">Orçamento</option>
         </select>
       </div>
       <div class="control">
@@ -70,7 +79,6 @@
           <select id="vendaOrigemTipo">
             <option value="Direta">Direta</option>
             <option value="OS">O.S.</option>
-            <option value="Orcamento">Orçamento</option>
           </select>
         </div>
         <div class="control control--grow">
@@ -161,7 +169,7 @@
       <div class="table-block__header">
         <h3>Recebimento</h3>
       </div>
-      <section class="controls controls--orcamento" style="margin-top: 0; grid-template-columns: 0.8fr 1fr 1fr 1fr 1fr">
+      <section class="controls controls--orcamento" style="margin-top: 0; grid-template-columns: 1fr 1fr 1fr 1fr">
         <div class="control">
           <label for="vendaValorTotal">Valor total</label>
           <input id="vendaValorTotal" type="text" placeholder="R$ 0,00" readonly />
@@ -177,10 +185,6 @@
         <div class="control">
           <label for="vendaValorFinal">Valor final</label>
           <input id="vendaValorFinal" type="text" placeholder="R$ 0,00" readonly />
-        </div>
-        <div class="control">
-          <label for="vendaValorRecebido">Valor recebido</label>
-          <input id="vendaValorRecebido" type="text" placeholder="R$ 0,00" />
         </div>
       </section>
       <section class="controls controls--orcamento" style="margin-top: 10px; grid-template-columns: 1fr 1fr">

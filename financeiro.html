@@ -4,6 +4,9 @@
       <h2>Financeiro</h2>
       <p>Valide recebimentos e acompanhe o desempenho por venda e cliente.</p>
     </div>
+    <button type="button" class="btn btn--ghost" id="financeiroImprimir">
+      Imprimir relatório
+    </button>
   </div>
 
   <section class="controls">
@@ -21,7 +24,6 @@
         <option value="">Todas</option>
         <option value="Direta">Direta</option>
         <option value="OS">O.S.</option>
-        <option value="Orcamento">Orçamento</option>
       </select>
     </div>
     <div class="control">
@@ -37,15 +39,15 @@
 
   <section class="summary summary--orcamento">
     <div class="summary__card">
-      <span>Total vendido</span>
+      <span>Vendas totais</span>
       <strong id="finTotalVendido">R$ 0,00</strong>
     </div>
     <div class="summary__card">
-      <span>Total recebido</span>
+      <span>Recebidas</span>
       <strong id="finTotalRecebido">R$ 0,00</strong>
     </div>
     <div class="summary__card">
-      <span>Total em aberto</span>
+      <span>Em aberto</span>
       <strong id="finTotalAberto">R$ 0,00</strong>
     </div>
   </section>

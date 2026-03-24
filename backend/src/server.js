@@ -10,7 +10,6 @@ const db = createDb();
 const ENTITY_TABLE = {
   clientes: "clientes",
   os: "ordens_servico",
-  orcamentos: "orcamentos",
   vendas: "vendas",
   empresa: "empresa",
 };
@@ -18,7 +17,6 @@ const ENTITY_TABLE = {
 const ENTITY_ID_FIELD = {
   clientes: "id",
   os: "id",
-  orcamentos: "numero",
   vendas: "numero",
   empresa: "id",
 };

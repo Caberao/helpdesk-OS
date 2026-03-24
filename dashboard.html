@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Helpdesk Support System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Work+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="logo.png" />
+    <link rel="stylesheet" href="style.css?v=20260323r3" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <img class="brand__logo" id="logoHeader" src="logo.png" alt="Logo" />
+          <div class="brand__text">
+            <h1 id="tituloHeader">Central de Suporte</h1>
+            <p id="subtituloHeader">Gestão completa de chamados com cadastro PF/PJ.</p>
+          </div>
+        </div>
+        <nav class="topnav">
+          <button class="btn btn--empresa" id="menuEmpresa">Empresa</button>
+          <button class="btn btn--ghost" id="menuCadastroCliente">Cliente</button>
+          <button class="btn btn--ghost" id="menuChamados">O.S.</button>
+          <button class="btn btn--ghost" id="menuVendas">Vendas</button>
+          <button class="btn btn--ghost" id="menuFinanceiro">Financeiro</button>
+        </nav>
+      </header>
+
+      <section class="dash">
+        <div class="dash__filters">
+          <div class="dash-filter">
+            <label for="dashDataInicio">De</label>
+            <div class="control__field">
+              <input id="dashDataInicio" type="date" />
+              <button type="button" class="clear-btn" data-dash-clear="dashDataInicio" aria-label="Limpar data inicial">×</button>
+            </div>
+          </div>
+          <div class="dash-filter">
+            <label for="dashDataFim">Até</label>
+            <div class="control__field">
+              <input id="dashDataFim" type="date" />
+              <button type="button" class="clear-btn" data-dash-clear="dashDataFim" aria-label="Limpar data final">×</button>
+            </div>
+          </div>
+          <div class="dash-filter dash-filter--info">
+            <small id="dashPeriodoInfo">Período atual</small>
+          </div>
+        </div>
+
+        <div class="dash__row">
+          <h3 class="dash__title">O.S.</h3>
+          <div class="summary summary--dash">
+            <div class="summary__card">
+              <span>O.S. abertas</span>
+              <strong id="totalOsAbertasDash">0</strong>
+            </div>
+            <div class="summary__card">
+              <span>O.S. finalizadas</span>
+              <strong id="totalOsFechadasDash">0</strong>
+            </div>
+            <div class="summary__card">
+              <span>O.S. em orçamento</span>
+              <strong id="totalOsOrcamentoDash">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash__row">
+          <h3 class="dash__title">Vendas</h3>
+          <div class="summary summary--dash">
+            <div class="summary__card">
+              <span>Quantidade de vendas</span>
+              <strong id="totalVendasQtdDash">0</strong>
+            </div>
+            <div class="summary__card">
+              <span>Vendas do dia</span>
+              <strong id="totalVendasDiaDash">0</strong>
+            </div>
+            <div class="summary__card">
+              <span>Total de O.S.</span>
+              <strong id="totalOsDash">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash__row">
+          <h3 class="dash__title">Financeiro</h3>
+          <div class="summary summary--dash">
+            <div class="summary__card">
+              <span>Vendas totais</span>
+              <strong id="finTotalVendidoDash">R$ 0,00</strong>
+            </div>
+            <div class="summary__card">
+              <span>Recebidas</span>
+              <strong id="finTotalRecebidoDash">R$ 0,00</strong>
+            </div>
+            <div class="summary__card">
+              <span>Em aberto</span>
+              <strong id="finTotalAbertoDash">R$ 0,00</strong>
+            </div>
+            <div class="summary__card">
+              <span>Recebido hoje</span>
+              <strong id="finRecebidoHojeDash">R$ 0,00</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      
+
+      
+      <div class="overlay" id="chamadosOverlay">
+        <div class="overlay__panel">
+          <header class="overlay__header">
+            <button class="icon-btn" id="fecharChamados" aria-label="Fechar">
+              ✕
+            </button>
+          </header>
+          <div id="chamadosConteudo"></div>
+        </div>
+      </div>
+
+      <div class="overlay" id="clientesOverlay">
+        <div class="overlay__panel">
+          <header class="overlay__header">
+            <button class="icon-btn" id="fecharClientes" aria-label="Fechar">
+              ✕
+            </button>
+          </header>
+          <div id="clientesConteudo"></div>
+        </div>
+      </div>
+
+      <div class="overlay" id="vendasOverlay">
+        <div class="overlay__panel">
+          <header class="overlay__header">
+            <button class="icon-btn" id="fecharVendas" aria-label="Fechar">
+              ✕
+            </button>
+          </header>
+          <div id="vendasConteudo"></div>
+        </div>
+      </div>
+
+      <div class="overlay" id="financeiroOverlay">
+        <div class="overlay__panel">
+          <header class="overlay__header">
+            <button class="icon-btn" id="fecharFinanceiro" aria-label="Fechar">
+              ✕
+            </button>
+          </header>
+          <div id="financeiroConteudo"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="modal">
+      <div class="modal__content">
+        <header>
+          <div>
+            <h2 id="modalTitulo">Nova O.S.</h2>
+            <p>Selecione o cliente e preencha os dados da ordem de serviço.</p>
+          </div>
+          <button class="icon-btn" id="fecharModal" aria-label="Fechar">
+            ✕
+          </button>
+        </header>
+
+        <form id="formChamado">
+          <div id="clientePickerSection"></div>
+          <div id="chamadoSection"></div>
+          <div id="financeiroSection"></div>
+
+          <footer class="form-actions">
+            <button type="button" class="btn btn--ghost" id="cancelar">Cancelar</button>
+            <button type="submit" class="btn btn--primary" id="salvar">Salvar</button>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="modalCliente">
+      <div class="modal__content">
+        <header>
+          <div>
+            <h2 id="modalClienteTitulo">Cadastro de cliente</h2>
+            <p>Preencha os dados do cliente PF ou PJ.</p>
+          </div>
+          <button class="icon-btn" id="fecharModalCliente" aria-label="Fechar">
+            ✕
+          </button>
+        </header>
+
+        <form id="formCliente">
+          <div id="clienteSection"></div>
+
+          <footer class="form-actions">
+            <button type="button" class="btn btn--ghost" id="cancelarCliente">Cancelar</button>
+            <button type="submit" class="btn btn--primary" id="salvarCliente">Salvar cliente</button>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="modalPagamento">
+      <div class="modal__content modal__content--print">
+        <header>
+          <div>
+            <h2 id="modalPagamentoTitulo">Documento</h2>
+            <p>Revise os dados antes de imprimir.</p>
+          </div>
+          <button class="icon-btn" id="fecharModalPagamento" aria-label="Fechar">
+            ✕
+          </button>
+        </header>
+
+        <div class="print-actions">
+          <div class="tabs">
+            <button type="button" class="tab-btn" data-doc="orcamento">Orçamento</button>
+            <button type="button" class="tab-btn" data-doc="recibo">Recibo</button>
+            <button type="button" class="tab-btn" data-doc="pedido">Pedido</button>
+          </div>
+          <button type="button" class="btn btn--primary" id="btnImprimir">Imprimir</button>
+        </div>
+
+        <div id="docConteudo" class="doc-content"></div>
+      </div>
+    </div>
+
+    <div class="modal" id="modalEmpresa">
+      <div class="modal__content">
+        <header>
+          <div>
+            <h2>Dados da empresa</h2>
+            <p>Atualize as informações exibidas nos documentos.</p>
+          </div>
+          <button class="icon-btn" id="fecharModalEmpresa" aria-label="Fechar">
+            ✕
+          </button>
+        </header>
+
+        <form id="formEmpresa">
+          <div class="form-section">
+            <div class="grid">
+              <div class="field">
+                <label for="empresaNome">Nome da empresa</label>
+                <input id="empresaNome" type="text" required />
+              </div>
+              <div class="field">
+                <label for="empresaDocumento">CNPJ/Documento</label>
+                <input id="empresaDocumento" type="text" />
+              </div>
+              <div class="field">
+                <label for="empresaTelefone">Telefone</label>
+                <input id="empresaTelefone" type="text" />
+              </div>
+              <div class="field field--full">
+                <label for="empresaEndereco">Endereço</label>
+                <input id="empresaEndereco" type="text" />
+              </div>
+              <div class="field">
+                <label for="empresaLogo">Logo (arquivo ou URL)</label>
+                <input id="empresaLogo" type="text" />
+                <small class="field__hint">Ex: logo.png ou https://...</small>
+              </div>
+              <div class="field">
+                <label for="empresaAssinatura">Assinatura PNG (arquivo ou URL)</label>
+                <input id="empresaAssinatura" type="text" />
+                <small class="field__hint">Ex: assinatura.png ou https://...</small>
+                <input id="empresaAssinaturaFile" type="file" accept=".png,image/png" style="margin-top: 8px" />
+              </div>
+              <div class="field">
+                <label for="empresaTitulo">Título do cabeçalho</label>
+                <input id="empresaTitulo" type="text" />
+              </div>
+              <div class="field field--full">
+                <label for="empresaSubtitulo">Subtítulo do cabeçalho</label>
+                <input id="empresaSubtitulo" type="text" />
+              </div>
+            </div>
+          </div>
+
+          <footer class="form-actions">
+            <button type="button" class="btn btn--ghost" id="cancelarEmpresa">Cancelar</button>
+            <button type="submit" class="btn btn--primary">Salvar</button>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="js/script.js?v=20260323l"></script>
+  </body>
+</html>

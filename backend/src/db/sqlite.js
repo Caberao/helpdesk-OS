@@ -30,13 +30,6 @@ const createSqliteAdapter = (sqlitePath) => {
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS orcamentos (
-        id TEXT PRIMARY KEY,
-        data TEXT NOT NULL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-
       CREATE TABLE IF NOT EXISTS vendas (
         id TEXT PRIMARY KEY,
         data TEXT NOT NULL,
