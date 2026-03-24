@@ -66,6 +66,30 @@ Se limpar dados do navegador, os dados locais são perdidos.
 Arquivo local do banco SQLite:
 `backend/data/helpdesk.db`
 
+## Opções de Banco de Dados
+### 1) Local no PC (SQLite)
+- Melhor para uso individual/local.
+- Simples de instalar e manter.
+- Arquivo único do banco em:
+`backend/data/helpdesk.db`
+- Arquivo de exemplo:
+`backend/.env.local.example`
+
+### 2) Online (Supabase/PostgreSQL)
+- Melhor para uso remoto e compartilhado.
+- Banco gerenciado online.
+- Arquivo de exemplo:
+`backend/.env.supabase.example`
+- Campos principais:
+- `DB_PROVIDER=postgres`
+- `DATABASE_URL=<string do Supabase>`
+- `PGSSL=true`
+- `PGSSL_REJECT_UNAUTHORIZED=false`
+
+Observação:
+- Neste momento o front ainda usa `LocalStorage`.
+- O backend já está pronto para evolução do projeto e integração completa.
+
 ## Limitações Conhecidas
 - Sem autenticação de usuários.
 - Sem sincronização multiusuário no modo LocalStorage.
@@ -90,4 +114,3 @@ Arquivo pronto:
 - Não versionar segredos/chaves.
 - A pasta `.local-keys/` deve permanecer local (já ignorada no `.gitignore`).
 - Se alguma chave foi exposta, gere/rotacione uma nova imediatamente.
-
